@@ -204,7 +204,7 @@ class Quat:
         Keyword args:
         order - the rotation order used for the conversion. Choices are:
             'ZYX' or 'Aerospace' for standard aerospace order
-            'ZXY' of 'BVH' for the order used in BVH animation files
+            'ZXY' or 'BVH' for the order used in BVH animation files
         '''
         m = self.asMatrix()
         return matrixToEuler(m,order,degrees)
