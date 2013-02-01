@@ -39,8 +39,8 @@ DEVICE_ID=0 # 0 is all devices
 class Panda:
     def __init__(self, live=True, sd=True, path=CALIBRATION_PATH, send_freq=SEND_FREQ):
         self.mag_calibrations = self.readCalibration(CALIBRATION_FILES, path)
-        print path
-        print self.mag_calibrations
+        #print path
+        #print self.mag_calibrations
 
         self.prevFrameTimestamp = 0
 
@@ -89,7 +89,7 @@ class Panda:
 
         return result
 
-    def handleData(self, data):
+    def handleData(self, data, returnQuat=False):
         #print "hello"
 
         self.count += 1
@@ -136,9 +136,11 @@ class Panda:
                 q = self.orientationFilters[nodeID].update(accel/1024.0, mag, gyro * GYRO_SCALE * pi / 180.0, gyro_interval)
                 if recordFrame:
                     self.sock.sendto("%d,%1.10f,%1.10f,%1.10f,%1.10f,%d"%(nodeID,q.w,q.x,-q.y,-q.z,1), (HOST, PORT))
-                    #print "frame " + str(gyroRTC)
+                    print "frame " + str(gyroRTC)
                 else:
                     self.sock.sendto("%d,%1.10f,%1.10f,%1.10f,%1.10f,%d"%(nodeID,q.w,q.x,-q.y,-q.z,0), (HOST, PORT))
+                if returnQuat:
+                    return q
 
             self.prevGyroTimestamps[nodeID] = gyroRTC
 

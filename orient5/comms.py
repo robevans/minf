@@ -1,4 +1,4 @@
-    __author__ = 'Andrew'
+__author__ = 'Andrew'
 
 import serial
 import struct
