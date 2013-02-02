@@ -9,8 +9,7 @@ def readRawData(input_filename):
 
 	data = []
 	for l in lines:
-		numbers = map(float,filter(lambda x: x!='' ,l.translate(None,'[]()ary').split(' ')))
-		print numbers
+		numbers = map(float,filter(lambda x: x!='' ,l.translate(None,'[](),ary').split(' ')))
 		nodeID = numbers[0]
 		accelRTC = numbers[1]
 		gyroRTC = numbers[2]
@@ -24,7 +23,9 @@ def readRawData(input_filename):
 
 	quats = []
 	for d in data:
-		quats.append(panda.handleData(d, returnQuat=True))
+		q=panda.handleData(d, returnQuat=True)
+		if q != None:
+			quats.append(q.copy())
 
 	return quats
 

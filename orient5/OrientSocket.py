@@ -136,7 +136,7 @@ class Panda:
                 q = self.orientationFilters[nodeID].update(accel/1024.0, mag, gyro * GYRO_SCALE * pi / 180.0, gyro_interval)
                 if recordFrame:
                     self.sock.sendto("%d,%1.10f,%1.10f,%1.10f,%1.10f,%d"%(nodeID,q.w,q.x,-q.y,-q.z,1), (HOST, PORT))
-                    print "frame " + str(gyroRTC)
+                    #print "frame " + str(gyroRTC)
                 else:
                     self.sock.sendto("%d,%1.10f,%1.10f,%1.10f,%1.10f,%d"%(nodeID,q.w,q.x,-q.y,-q.z,0), (HOST, PORT))
                 if returnQuat:
