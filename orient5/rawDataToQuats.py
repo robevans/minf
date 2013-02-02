@@ -3,7 +3,7 @@ __author__ = 'Robert Evans'
 import OrientSocket
 import numpy
 
-def readRawData(input_filename):
+def rawDataFileToQuats(input_filename):
 	with open(input_filename) as f:
 		lines = f.readlines()
 
@@ -34,4 +34,4 @@ if __name__=='__main__':
 	if (len(sys.argv)!=2):
 		print "Usage: rawDataToQuats <filename>"
 		sys.exit(0)
-	sys.exit(readRawData(sys.argv[1]))
+	sys.exit(rawDataFileToQuats(sys.argv[1]))
