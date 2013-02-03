@@ -11,11 +11,11 @@ def plotCSV(input_filename):
 	pylab.figure()
 	pylab.plot(X)
 	pylab.xlabel('Time (frames)')
-	pylab.ylabel('Latent co-ordinate')
-	pylab.title('Horizontal Arm Spins - Post PCA')
+	pylab.ylabel('Sensor readings')
+	pylab.title('Title')
 	#pylab.legend((''))
 
-	pylab.tight_layout()
+	#pylab.tight_layout()
 	pylab.show()
 	#pylab.savefig('/Users/robertevans/Desktop/postPCA.pdf', format='pdf')
 
