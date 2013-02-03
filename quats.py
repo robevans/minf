@@ -3,6 +3,12 @@ __author__ = 'Robert Evans'
 import OrientSocket
 import numpy
 import pylab
+import pca
+
+def pcaQuats(input_filename, euler=False, n_components=1):
+	quats = rawDataFileToQuats(input_filename)
+	highDim = rearrangeQuatsForLatentSpaceAlgorithm(quats, euler)
+	lowDim = pca.pca(highDim,n_components)
 
 def rawDataFileToQuats(input_filename):
 	with open(input_filename) as f:
@@ -30,7 +36,18 @@ def rawDataFileToQuats(input_filename):
 
 	return quats
 
-def plotQuats(Quats):
+def rearrangeQuatsForLatentSpaceAlgorithm(labelledQuats, euler=False):
+	sensors = sorted(list(set([s for (s,q) in labelledQuats])))
+	separateSensorsQuats = []
+	for sensor in sensors:
+		separateSensorsQuats.append([q for (s,q) in labelledQuats if s == sensor])
+
+	if euler:
+		return numpy.array([numpy.concatenate((a.toEuler(),b.toEuler(),c.toEuler())) for (a,b,c) in zip(*separateSensorsQuats)])
+	else:
+		return numpy.array([list(a.components + b.components + c.components) for (a,b,c) in zip(*separateSensorsQuats)])
+
+def plotQuats(Quats, title='Quaternions'):
 	X = numpy.zeros((len(Quats),4))
 	for i in range(len(Quats)):
 		X[i] = numpy.array(Quats[i].components)
@@ -39,11 +56,11 @@ def plotQuats(Quats):
 	pylab.plot(X)
 	pylab.xlabel('Time (frames)')
 	pylab.ylabel('Quaternion components')
-	pylab.title('Quaternions')
+	pylab.title(title)
 	#pylab.legend((''))
 	#pylab.tight_layout()
-	pylab.show()
 	#pylab.savefig('/Users/robertevans/Desktop/quats.pdf', format='pdf')
+	pylab.show()
 
 def plotQuatsAsEuler(Quats):
 	X = numpy.zeros((len(Quats),3))
@@ -57,8 +74,8 @@ def plotQuatsAsEuler(Quats):
 	pylab.title('Euler angles')
 	#pylab.legend((''))
 	#pylab.tight_layout()
-	pylab.show()
 	#pylab.savefig('/Users/robertevans/Desktop/quats.pdf', format='pdf')
+	pylab.show()
 
 def plotQuatsFromFile(input_filename):
 	with open(input_filename,'r') as f:
@@ -75,5 +92,5 @@ def plotQuatsFromFile(input_filename):
 	pylab.title('Quaternions')
 	#pylab.legend(('')) 
 	#pylab.tight_layout()
-	pylab.show()
 	#pylab.savefig('/Users/robertevans/Desktop/quats.pdf', format='pdf')
+	pylab.show()
