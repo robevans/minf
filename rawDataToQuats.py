@@ -25,7 +25,7 @@ def rawDataFileToQuats(input_filename):
 	for d in data:
 		q=panda.handleData(d, returnQuat=True)
 		if q != None:
-			quats.append((nodeID,q.copy()))
+			quats.append((d[0],q.copy()))
 
 	return quats
 
