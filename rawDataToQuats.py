@@ -1,6 +1,6 @@
 __author__ = 'Robert Evans'
 
-from .orient5 import OrientSocket
+import OrientSocket
 import numpy
 
 def rawDataFileToQuats(input_filename):
