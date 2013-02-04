@@ -9,11 +9,14 @@ def pca(highDimensionalData,n_components=3):
 	pca = PCA(n_components=n_components)
 	lowDimensionalData = pca.fit(highDimensionalData).transform(highDimensionalData)
 
-	print lowDimensionalData
 	print "Explained variance by component: " + str(pca.explained_variance_ratio_)
 
-	pl.plot(lowDimensionalData)
-	pl.show()
+	#pl.plot(lowDimensionalData)
+	#pl.xlabel('Time (frames)')
+	#pl.title('PCA using Euler Angles')
+	#pl.savefig('/Users/robertevans/Desktop/eulerPCA.pdf', format='pdf')
+	#pl.show()
+	return lowDimensionalData
 
 def pcaWithFiles(input_filename,output_filename="Null"):
 
