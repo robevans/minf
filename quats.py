@@ -9,6 +9,7 @@ def pcaQuats(input_filename, euler=False, n_components=1):
 	quats = rawDataFileToQuats(input_filename)
 	highDim = rearrangeQuatsForLatentSpaceAlgorithm(quats, euler)
 	lowDim = pca.pca(highDim,n_components)
+	return lowDim
 
 def rawDataFileToQuats(input_filename):
 	with open(input_filename) as f:
