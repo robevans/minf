@@ -1,9 +1,15 @@
+__author__ = 'Robert Evans'
+
 import numpy as np
 import mins_and_maxs as mm
 import smooth as sm
 import pylab as pl
 
-def segmentAndPlot(X):
+def segmentAndPlot(X, xIsFilename=False):
+	if xIsFilename == True:
+		with open(X,'r') as fin:
+			X = np.loadtxt(fin,delimiter=",")
+
 	(mins,maxs) = segmentationPoints(X)
 	pl.figure(figsize=(11,9))
 	pl.plot(X)
@@ -20,21 +26,32 @@ def segmentAndPlot(X):
 	pl.show()
 	#pl.savefig('/Users/robertevans/Desktop/segments.pdf', format='pdf')
 
-def segmentAndSave(X, segmentBy="maxs",trimFrom=None,trimTo=float('inf'),filePrefix="H",fileSuffix=".csv"):
-	(mins,maxs) = segmentationPoints(X)
-	if segmentBy == "maxs":
-		segPoints=[m for m in maxs if m>=trimFrom and m<=trimTo]
-	if segmentBy == "mins":
-		segPoints=[m for m in mins if m>=trimFrom and m<=trimTo]
-	segments=np.split(X,segPoints)
+def segmentAndSave(X, segmentationPoints="useX", xIsFilename=False, segmentBy="maxs",trimFrom=None,trimTo=float('inf'),filePrefix="./segments/V",fileSuffix=".csv"):
+	if xIsFilename == True:
+		with open(X,'r') as fin:
+			X = np.loadtxt(fin,delimiter=",")
 
+	if segmentationPoints == "useX":
+		(mins,maxs) = segmentationPoints(X)
+		if segmentBy == "maxs":
+			segPoints=[m for m in maxs if m>=trimFrom and m<=trimTo]
+		if segmentBy == "mins":
+			segPoints=[m for m in mins if m>=trimFrom and m<=trimTo]
+	else:
+		segPoints=[p for p in segmentationPoints if p>=trimFrom and p<=trimTo]
+	
+	segments=np.split(X,segPoints)
 	i=0
 	for seg in segments:
 		np.savetxt("%s%i%s"%(filePrefix,i,fileSuffix),seg, delimiter=",")
 		i+=1
 		print segments
 
-def segmentationPoints(X):
+def segmentationPoints(X, xIsFilename=False):
+	if xIsFilename == True:
+		with open(X,'r') as fin:
+			X = np.loadtxt(fin,delimiter=",")
+
 	smoothX = sm.smooth(X,window_len=11,window='flat')
 	(unsmoothedMins,unsmoothedMaxs) = mm.find_mins_and_maxs1D(X)
 	(smoothedMins,smoothedMaxs) = mm.find_mins_and_maxs1D(smoothX)
