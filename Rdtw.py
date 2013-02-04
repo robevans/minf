@@ -13,9 +13,9 @@ R = rpy2.robjects.r
 DTW = importr('dtw')
 
 def drawGraphs(queryFile, referenceFile):
-	with open(queryFile) as fquery:
+	with open(queryFile,'r') as fquery:
 		query = np.loadtxt(fquery,delimiter=",")
-	with open(referenceFile) as freference:
+	with open(referenceFile,'r') as freference:
 		reference = np.loadtxt(freference,delimiter=",")
 
 	alignment = R.dtw(query, reference, keep=True)
@@ -36,9 +36,9 @@ def drawGraphs(queryFile, referenceFile):
 	enableInteractivity()
 
 def getDTWdist(queryFile,referenceFile):
-	with open(queryFile) as fquery:
+	with open(queryFile,'r') as fquery:
 		query = np.loadtxt(fquery,delimiter=",")
-	with open(referenceFile) as freference:
+	with open(referenceFile,'r') as freference:
 		reference = np.loadtxt(freference,delimiter=",")
 	alignment = R.dtw(query, reference, keep=True)
 	dist = alignment.rx('distance')[0][0]
