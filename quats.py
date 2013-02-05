@@ -5,7 +5,7 @@ import numpy
 import pylab
 import pca
 
-def pcaQuats(input_filename, euler=False, n_components=1):
+def doPCAonQuats(input_filename, euler=False, n_components=1):
 	quats = rawDataFileToQuats(input_filename)
 	highDim = rearrangeQuatsForLatentSpaceAlgorithm(quats, euler)
 	lowDim = pca.pca(highDim,n_components)
