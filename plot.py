@@ -8,9 +8,22 @@ import smooth
 from quats import plotQuatsFromFile
 from mpl_toolkits.mplot3d import Axes3D
 
-def initPlot3D():
+def plotPCA3D(lowDims):
 	fig = pylab.figure()
-	return fig.add_subplot(111, projection='3d')
+	ax = fig.add_subplot(111, projection='3d')
+	ax.plot3D(range(len(lowDims[:,0])),lowDims[:,0],lowDims[:,1])
+	pylab.show()
+
+def plotPCA3Dsubplots(listOflowDimLists):
+	f = pylab.figure()
+	for i in range(len(listOflowDimLists)):
+		ax = f.add_subplot(int(math.ceil(math.sqrt(len(listOflowDimLists)))),int(math.ceil(math.sqrt(len(listOflowDimLists)))),i+1,projection='3d')
+		ax.plot3D(range(len(listOflowDimLists[i][:,0])),listOflowDimLists[i][:,0],listOflowDimLists[i][:,1])
+		ax.set_xlabel('Time')
+		ax.set_ylabel('1st component')
+		ax.set_zlabel('2nd component')
+	f.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
+	pylab.show()
 
 def plotDir(input_directory):
 
