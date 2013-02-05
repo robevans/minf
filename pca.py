@@ -5,18 +5,24 @@ import pylab as pl
 
 from sklearn.decomposition import PCA
 
+def doPCAonMultipleMotions(listOfHighDimMotions,n_components=3):
+	listOfLowDimMotions = []
+	for highDimMotion in listOfHighDimMotions:
+		(lowDimMotion,variance) = pca(highDimMotion,n_components)
+		listOfLowDimMotions.append(lowDimMotion)
+	return listOfLowDimMotions
+
 def pca(highDimensionalData,n_components=3):
 	pca = PCA(n_components=n_components)
 	lowDimensionalData = pca.fit(highDimensionalData).transform(highDimensionalData)
 
-	print "Explained variance by component: " + str(pca.explained_variance_ratio_)
-
+	#print "Explained variance by component: " + str(pca.explained_variance_ratio_)
 	#pl.plot(lowDimensionalData)
 	#pl.xlabel('Time (frames)')
 	#pl.title('PCA using Euler Angles')
 	#pl.savefig('/Users/robertevans/Desktop/eulerPCA.pdf', format='pdf')
 	#pl.show()
-	return lowDimensionalData
+	return (lowDimensionalData,pca.explained_variance_ratio_) #This used to only return the low dim data, I might have broken things with the tuple
 
 def pcaFromFile(input_filename,n_components=3):
 	with open(input_filename,'r') as fin:
