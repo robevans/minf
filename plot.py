@@ -6,6 +6,11 @@ import numpy
 import pylab
 import smooth
 from quats import plotQuatsFromFile
+from mpl_toolkits.mplot3d import Axes3D
+
+def initPlot3D():
+	fig = pylab.figure()
+	return fig.add_subplot(111, projection='3d')
 
 def plotDir(input_directory):
 
