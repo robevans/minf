@@ -18,8 +18,12 @@ def pca(highDimensionalData,n_components=3):
 	#pl.show()
 	return lowDimensionalData
 
-def pcaWithFiles(input_filename,output_filename="Null"):
+def pcaFromFile(input_filename,n_components=3):
+	with open(input_filename,'r') as fin:
+		X = np.loadtxt(fin,delimiter=",")
+	return pca(X,n_components)
 
+def pcaWithInputOutputFiles(input_filename,output_filename="Null"):
 	with open(input_filename,'r') as fin:
 		X = np.loadtxt(fin,delimiter=",")
 
