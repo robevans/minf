@@ -8,12 +8,12 @@ rpy2.robjects.numpy2ri.activate()
 R = rpy2.robjects.r
 DTW = importr('dtw')
 
-def getDTWdist2D(queryDims,referenceDims):
-	if (np.shape(queryDims)[1] == np.shape(referenceDims)[1]):
+def getDTWdist2DweightedSum(queryDims,referenceDims,weights):
+	if (np.shape(queryDims)[1] == np.shape(referenceDims)[1] == np.shape(weights)[0]):
 		dist = 0
 		for i in range(np.shape(queryDims)[1]):
 			alignment = R.dtw(queryDims[:,i],referenceDims[:,i], keep=True)
-			dist += alignment.rx('distance')[0][0]
+			dist += weights[i] * alignment.rx('distance')[0][0]
 		return dist
 	else:
 		return None
