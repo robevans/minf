@@ -1,16 +1,22 @@
 __author__ = 'Robert Evans'
 
 import numpy as np
-
-# Import R interfaces
 from rpy2.robjects.packages import importr
 from rpy2 import robjects
 import rpy2.robjects.numpy2ri
 rpy2.robjects.numpy2ri.activate()
-
-# Import R Dynamic Time Warping library
 R = rpy2.robjects.r
 DTW = importr('dtw')
+
+def getDTWdist2D(queryDims,referenceDims):
+	if (np.shape(queryDims)[1] == np.shape(referenceDims)[1]):
+		dist = 0
+		for i in range(np.shape(queryDims)[1]):
+			alignment = R.dtw(queryDims[:,i],referenceDims[:,i], keep=True)
+			dist += alignment.rx('distance')[0][0]
+		return dist
+	else:
+		return None
 
 def drawGraphs(queryFile, referenceFile):
 	with open(queryFile,'r') as fquery:
@@ -40,6 +46,9 @@ def getDTWdist(queryFile,referenceFile):
 		query = np.loadtxt(fquery,delimiter=",")
 	with open(referenceFile,'r') as freference:
 		reference = np.loadtxt(freference,delimiter=",")
+	return dist(query,reference)
+
+def dist(query,reference):
 	alignment = R.dtw(query, reference, keep=True)
 	dist = alignment.rx('distance')[0][0]
 	return dist
@@ -47,6 +56,6 @@ def getDTWdist(queryFile,referenceFile):
 if __name__=='__main__':
 	import sys
 	if (len(sys.argv)!=3):
-		print "Usage: Rdtw <query_filename.csv> <reference_filename.csv>"
+		print "Usage: dtw <query_filename.csv> <reference_filename.csv>"
 		sys.exit(0)
 	sys.exit(drawGraphs(sys.argv[1],sys.argv[2]))
