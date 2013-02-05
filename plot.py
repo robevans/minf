@@ -4,7 +4,8 @@ import glob
 import math
 import numpy
 import pylab
-import matplotlib.pyplot as plt
+import smooth
+from quats import plotQuatsFromFile
 
 def plotDir(input_directory):
 
@@ -18,7 +19,7 @@ def plotDir(input_directory):
 			names.append(f.split('/')[-1].split('.')[0])
 
 	n = int(math.ceil(math.sqrt(len(data))))
-	figure,axes = plt.subplots(n, n, sharex=True, sharey=True)
+	figure,axes = pylab.subplots(n, n, sharex=True, sharey=True)
 
 	i = 0
 	for r in range(n):
@@ -31,14 +32,29 @@ def plotDir(input_directory):
 			i+=1
 
 	if len(data)-(n*n) != 0:
-		plt.setp([a.get_xticklabels() for a in axes[-2, len(data)-(n*n):]], visible=True)
+		pylab.setp([a.get_xticklabels() for a in axes[-2, len(data)-(n*n):]], visible=True)
 
 	pylab.tight_layout()
 	#pylab.savefig('/Users/robertevans/Desktop/VHsegments.pdf', format='pdf')
-	plt.show()
+	pylab.show()
+
+def plotCSV(input_filename):
+	with open(input_filename,'r') as fin:
+			X = numpy.loadtxt(fin,delimiter=",")
+
+	pylab.figure()
+	pylab.plot(X)
+	pylab.xlabel('Time (frames)')
+	pylab.ylabel('Sensor readings')
+	pylab.title('Title')
+	#pylab.legend((''))
+
+	#pylab.tight_layout()
+	pylab.show()
+	#pylab.savefig('/Users/robertevans/Desktop/postPCA.pdf', format='pdf')
 
 if __name__=='__main__':
 	import sys
 	if (len(sys.argv)==2):
-		sys.exit(plotDir(sys.argv[1]))
-	print "Usage: plotDir <directoryWithCSVfiles>"
+		sys.exit(plotCSV(sys.argv[1]))
+	print "Usage: plotCSV <file.csv>"
