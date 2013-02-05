@@ -8,6 +8,15 @@ import smooth
 from quats import plotQuatsFromFile
 from mpl_toolkits.mplot3d import Axes3D
 
+def plotSimilarityMatrix(distancesIn2DArray,tickLabels):
+	distances = numpy.array(distancesIn2DArray)
+	pylab.imshow(distances, interpolation='nearest')
+	pylab.xticks(range(len(distances)),tickLabels)
+	pylab.yticks(range(len(distances)),tickLabels)
+	pylab.colorbar()
+	pylab.title("DTW distances cross referenced")
+	pylab.show()
+
 def plotPCA3D(lowDims):
 	fig = pylab.figure()
 	ax = fig.add_subplot(111, projection='3d')
@@ -23,6 +32,16 @@ def plotPCA3Dsubplots(listOflowDimLists):
 		ax.set_ylabel('1st component')
 		ax.set_zlabel('2nd component')
 	f.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
+	pylab.show()
+
+def plotGridOf2Ds(listOfDatas):
+	f = pylab.figure()
+	for i in range(len(listOfDatas)):
+		ax = f.add_subplot(int(math.ceil(math.sqrt(len(listOfDatas)))),int(math.ceil(math.sqrt(len(listOfDatas)))),i+1)
+		ax.plot(listOfDatas[i])
+		ax.set_xlabel('Time')
+		ax.set_ylabel('y')
+	#pylab.tight_layout()
 	pylab.show()
 
 def plotDir(input_directory):
