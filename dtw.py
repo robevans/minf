@@ -16,7 +16,9 @@ def getDTWdist2DweightedSum(queryDims,referenceDims,weights):
 			dist += weights[i] * alignment.rx('distance')[0][0]
 		return dist
 	else:
-		return None
+		import sys
+		sys.exit("Bad input shapes")
+
 
 def drawGraphs(queryFile, referenceFile):
 	with open(queryFile,'r') as fquery:
