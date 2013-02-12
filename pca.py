@@ -22,7 +22,7 @@ def pca(highDimensionalData,n_components=3):
 	#pl.title('PCA using Euler Angles')
 	#pl.savefig('/Users/robertevans/Desktop/eulerPCA.pdf', format='pdf')
 	#pl.show()
-	return (lowDimensionalData,pca.explained_variance_ratio_) #This used to only return the low dim data, I might have broken things with the tuple
+	return (lowDimensionalData,pca.explained_variance_ratio_)
 
 def pcaFromFile(input_filename,n_components=3):
 	with open(input_filename,'r') as fin:
