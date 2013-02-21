@@ -12,13 +12,13 @@ class tool():
 	 	self.drawGraph()
 
 	def drawGraph(self):
+		plt.ion()
 	 	self.fig = plt.figure()
 		self.ax = self.fig.add_subplot(111)
 		self.ax.plot(self.data)
 		self.fig.canvas.mpl_connect('button_press_event', self.onPress)
 		self.fig.canvas.mpl_connect('motion_notify_event', self.onMotion)
 		self.fig.canvas.mpl_connect('button_release_event', self.onRelease)
-		plt.draw()
 
 	def onPress(self,event):
 		if self.line:
