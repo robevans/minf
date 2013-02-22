@@ -5,10 +5,22 @@ from subprocess import Popen, PIPE
 
 class tool():
 	def __init__(self, data, absolutePathToVideo):
-		self.videoControl = videoController(absolutePathToVideo)
+		self.graph = graph(data)
+		self.video = videoController(absolutePathToVideo)
+
+	def update(self):
+		if self.graph.isUpdated:
+			self.video.setTime(self.graph.currentX)
+			self.graph.isUpdated = False
+
+
+class graph():
+	def __init__(self, data):
 	 	self.data=data
 	 	self.line=None
 	 	self.mousePressed = None
+	 	self.currentX = None
+	 	self.isUpdated = False
 	 	self.drawGraph()
 
 	def drawGraph(self):
@@ -25,6 +37,8 @@ class tool():
 			del(self.ax.lines[-1])
 			self.line=None
 		if event.inaxes and event.xdata > 0:
+			self.currentX = event.xdata
+			self.isUpdated = True
 			self.line =  self.ax.axvline(x=event.xdata, color='red')
 			self.fig.canvas.draw()
 			self.mousePressed = True
@@ -35,6 +49,8 @@ class tool():
 				if self.line:
 					del(self.ax.lines[-1])
 					self.line=None
+				self.currentX = event.xdata
+				self.isUpdated = True
 				self.line =  self.ax.axvline(x=event.xdata, color='red')
 				self.fig.canvas.draw()
 
@@ -43,6 +59,8 @@ class tool():
 			del(self.ax.lines[-1])
 			self.line=None
 		if event.inaxes and event.xdata > 0:
+			self.currentX = event.xdata
+			self.isUpdated = True
 			self.line =  self.ax.axvline(x=event.xdata, color='red')
 			self.fig.canvas.draw()
 		self.mousePressed = None
@@ -87,6 +105,22 @@ class videoController():
 						end tell"""%seconds
 		p = Popen(['osascript', '-'] + ['2', '2'], stdin=PIPE, stdout=PIPE, stderr=PIPE)
 		stdout, stderr = p.communicate(applescript)
+
+	def getTime(self):
+		applescript="""tell application "VLC"
+							get current time
+						end tell"""
+		p = Popen(['osascript', '-'] + ['2', '2'], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+		stdout, stderr = p.communicate(applescript)
+		return int(stdout[:-1])
+
+	def getDuration(self):
+		applescript="""tell application "VLC"
+							duration of current item
+						end tell"""
+		p = Popen(['osascript', '-'] + ['2', '2'], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+		stdout, stderr = p.communicate(applescript)
+		return int(stdout[:-1])
 
 	def quit(self):
 		applescript="""if application "VLC" is running
