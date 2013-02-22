@@ -1,11 +1,11 @@
 __author__ = 'Andrew'
 
-from comms import *
+from commsTDMA import *
 from pylab import plot, show, array,copy,figure,shape,l2norm, empty, amap, mean, loadtxt
 from scipy.optimize import leastsq
 from mayavi import mlab
 
-DEVICE_ID = 10
+DEVICE_ID = 4
 
 CAPTURE_TIME_MINS = 0.5
 SEND_FREQ=1
@@ -32,7 +32,7 @@ class MagCalibration:
 
         else:
             self.collectData = True
-            self.c = CaptureThread(self.handleData, filename="ID_cal01.log",time_mins=CAPTURE_TIME_MINS, send_freq=SEND_FREQ,cal_id=DEVICE_ID)
+            self.c = CaptureThread(self.handleData)
             self.c.start()
             print "rotate device in all axes for 30 seconds..."
             #raw_input("Rotate device. Press ENTER when done...")
