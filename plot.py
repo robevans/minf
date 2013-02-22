@@ -8,14 +8,19 @@ import smooth
 from quats import plotQuatsFromFile
 from mpl_toolkits.mplot3d import Axes3D
 
-def plotSimilarityMatrix(distancesIn2DArray,tickLabels,title="DTW distances cross referenced"):
+def plotSimilarityMatrix(distancesIn2DArray,tickLabels,title="DTW distances cross referenced",savePlot=False):
 	distances = numpy.array(distancesIn2DArray)
+	pylab.figure()
 	pylab.imshow(distances, interpolation='nearest')
 	pylab.xticks(range(len(distances)),tickLabels)
 	pylab.yticks(range(len(distances)),tickLabels)
 	pylab.colorbar()
 	pylab.title(title)
-	pylab.show()
+	pylab.tight_layout()
+	if savePlot:
+		pylab.savefig('/Users/robertevans/Desktop/'+title+'.pdf', format='pdf')
+	else:
+		pylab.show()
 
 def plotPCA3D(lowDims,title="Latent space"):
 	fig = pylab.figure()

@@ -21,13 +21,13 @@ def compareTwoFiles(f1,f2,n_components=3):
 
 	similarityMatrix(ls1+ls2,names,averageWeights)
 
-def similarityMatrix(segments,segmentNames,weights,title):
+def similarityMatrix(segments,segmentNames,weights,title,savePlot=False):
 	distances = []
 	for i in range(len(segments)):
 		distances.append([])
 		for j in range(len(segments)):
 			distances[i].append(dtw.getDTWdist2DweightedSum(segments[i],segments[j],weights))
-	plot.plotSimilarityMatrix(distances,segmentNames,title)
+	plot.plotSimilarityMatrix(distances,segmentNames,title,savePlot)
 
 def getQuaternionSegmentsByRawData(highDimensionalData,quaternionData):
 	(lowDimensionalData,explainedVariance) = pca.pca(highDimensionalData,n_components=1)
