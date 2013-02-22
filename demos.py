@@ -52,3 +52,25 @@ def lowDimRawSimilarity(n_components=3):
 	names = ['Big','Big','Big','Big','Big','Big','Big','Small','Small','Small','Small','Small','Small','Small','Small','Small']
 	averageWeights = [(a+b)/2.0 for (a,b) in zip(weights_large,weights_small)]
 	m.similarityMatrix(raw_h_large+raw_h_small,names,averageWeights,"Similarity Matrix using raw sensor data projected to the latent space")
+
+def allMotionslowDimRawSimilarity(n_components=3,savePlot=False,title="Similarity matrix"):
+	# Load files and get segments
+	(raw_v1,weights_v1)=m.getLowDimensionalSegments(m.readCSVfile("captures/VerticalArmSpin-Dan.csv"),n_components)
+	(raw_v2,weights_v2)=m.getLowDimensionalSegments(m.readCSVfile("captures/VerticalArmSpin-Jibran.csv"),n_components)
+	(raw_h1,weights_h1)=m.getLowDimensionalSegments(m.readCSVfile("captures/HorizontalArmSpin-Dan.csv"),n_components)
+	(raw_h2,weights_h2)=m.getLowDimensionalSegments(m.readCSVfile("captures/HorizontalArmSpin-Jibran.csv"),n_components)
+	(raw_h3,weights_h3)=m.getLowDimensionalSegments(m.readCSVfile("captures/HorizontalArmSpinLittleCircles-Jibran.csv"),n_components)
+	# Discard bad segments
+	raw_h1 = raw_h1[4:]
+	raw_v2 = raw_v2[1:5]
+	# Make name labels
+	namesV1 = ["V1"]*len(raw_v1)
+	namesV2 = ["V2"]*len(raw_v2)
+	namesH1 = ["H1"]*len(raw_h1)
+	namesH2 = ["H2"]*len(raw_h2)
+	namesH3 = ["H3"]*len(raw_h3)
+	names = namesV1+namesV2+namesH1+namesH2+namesH3
+	# Calculate average weights
+	averageWeights = [(a+b+c+d+e)/5.0 for (a,b,c,d,e) in zip(weights_v1,weights_v2,weights_h1,weights_h2,weights_h3)]
+	# Crunch similarity matrix
+	m.similarityMatrix(raw_v1+raw_v2+raw_h1+raw_h2+raw_h3,names,averageWeights,title,savePlot)
