@@ -52,7 +52,7 @@ def segmentationPoints(X, xIsFilename=False):
 		with open(X,'r') as fin:
 			X = np.loadtxt(fin,delimiter=",")
 
-	smoothX = sm.smooth(X,window_len=11,window='flat')
+	smoothX = sm.smooth(X,window_len=110,window='flat')
 	(unsmoothedMins,unsmoothedMaxs) = mm.find_mins_and_maxs1D(X)
 	(smoothedMins,smoothedMaxs) = mm.find_mins_and_maxs1D(smoothX)
 
