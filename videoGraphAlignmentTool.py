@@ -2,16 +2,35 @@ __author__ = 'Robert Evans'
 
 import matplotlib.pyplot as plt
 from subprocess import Popen, PIPE
+from master import readCSVfile
+import threading
+import time
 
 class tool():
 	def __init__(self, data, absolutePathToVideo):
 		self.graph = graph(data)
 		self.video = videoController(absolutePathToVideo)
+		self.coordinator = coordinator(self.graph, self.video)
+		self.coordinator.start()
 
 	def update(self):
 		if self.graph.isUpdated:
 			self.video.setTime(self.graph.currentX)
 			self.graph.isUpdated = False
+
+class coordinator(threading.Thread):
+	def __init__(self, graph, videoController):
+		self.g = graph
+		self.v = videoController
+		super(coordinator, self).__init__()
+
+	def run(self):
+		while True:
+			if self.g.isUpdated:
+				print "Updated!!"
+				self.g.isUpdated = False
+			time.sleep(0.1)
+
 
 
 class graph():
