@@ -8,15 +8,12 @@ import time
 
 class tool():
 	def __init__(self, data, absolutePathToVideo):
-		self.graph = graph(data)
-		self.video = videoController(absolutePathToVideo)
-		self.coordinator = coordinator(self.graph, self.video)
-		self.coordinator.start()
+			self.graph = graph(data)
+			self.video = videoController(absolutePathToVideo)
+			self.coordinator = coordinator(self.graph, self.video)
+			self.coordinator.start()
 
-	def update(self):
-		if self.graph.isUpdated:
-			self.video.setTime(self.graph.currentX)
-			self.graph.isUpdated = False
+lock = threading.Lock()
 
 class coordinator(threading.Thread):
 	def __init__(self, graph, videoController):
@@ -25,12 +22,19 @@ class coordinator(threading.Thread):
 		super(coordinator, self).__init__()
 
 	def run(self):
-		while True:
-			if self.g.isUpdated:
-				print "Updated!!"
-				self.g.isUpdated = False
-			time.sleep(0.1)
-
+		try:
+			while True:
+				if self.g.isUpdated:
+					self.v.setTime((self.g.currentX/len(self.g.data)*self.v.getDuration()))
+					self.g.isUpdated = False
+				else:
+					if self.v.isPlaying() and self.g.isUpdated == False:
+						lock.acquire()
+						self.g.setLine((float(self.v.getTime())/float(self.v.getDuration()))*len(self.g.data))
+						lock.release()
+				time.sleep(0.1)
+		except KeyboardInterrupt:
+			pass
 
 
 class graph():
@@ -52,37 +56,54 @@ class graph():
 		self.fig.canvas.mpl_connect('button_release_event', self.onRelease)
 
 	def onPress(self,event):
-		if self.line:
-			del(self.ax.lines[-1])
-			self.line=None
+		#if self.line:
+		#	del(self.ax.lines[-1])
+		#	self.line=None
+		lock.acquire()
 		if event.inaxes and event.xdata > 0:
 			self.currentX = event.xdata
 			self.isUpdated = True
-			self.line =  self.ax.axvline(x=event.xdata, color='red')
-			self.fig.canvas.draw()
+			#self.line = self.ax.axvline(x=event.xdata, color='red')
+			#self.fig.canvas.draw()
+			self.setLine(event.xdata)
 			self.mousePressed = True
+		lock.release()
 
 	def onMotion(self,event):
+		lock.acquire()
 		if self.mousePressed:
 			if event.inaxes and event.xdata > 0:
-				if self.line:
-					del(self.ax.lines[-1])
-					self.line=None
+				#if self.line:
+				#	del(self.ax.lines[-1])
+				#	self.line=None
 				self.currentX = event.xdata
 				self.isUpdated = True
-				self.line =  self.ax.axvline(x=event.xdata, color='red')
-				self.fig.canvas.draw()
+				self.setLine(event.xdata)
+		lock.release()
+				#self.line = self.ax.axvline(x=event.xdata, color='red')
+				#self.fig.canvas.draw()
 
 	def onRelease(self,event):
-		if self.line:
-			del(self.ax.lines[-1])
-			self.line=None
+		#if self.line:
+		#	del(self.ax.lines[-1])
+		#	self.line=None
+		lock.acquire()
 		if event.inaxes and event.xdata > 0:
 			self.currentX = event.xdata
 			self.isUpdated = True
-			self.line =  self.ax.axvline(x=event.xdata, color='red')
-			self.fig.canvas.draw()
+			self.setLine(event.xdata)
+			#self.line = self.ax.axvline(x=event.xdata, color='red')
+			#self.fig.canvas.draw()
 		self.mousePressed = None
+		lock.release()
+
+	def setLine(self, x):
+		if self.line:
+			del(self.ax.lines[-1])
+			self.line=None
+		if x>0 and x<=len(self.data):
+			self.line = self.line = self.ax.axvline(x=x, color='red')
+			self.fig.canvas.draw()
 
 class videoController():
 	def __init__(self,absolutePathToVideo=None):
@@ -117,6 +138,17 @@ class videoController():
 						end tell"""
 		p = Popen(['osascript', '-'] + ['2', '2'], stdin=PIPE, stdout=PIPE, stderr=PIPE)
 		stdout, stderr = p.communicate(applescript)
+
+	def isPlaying(self):
+		applescript="""tell application "VLC"
+							playing
+						end tell"""
+		p = Popen(['osascript', '-'] + ['2', '2'], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+		stdout, stderr = p.communicate(applescript)
+		if 'true' in stdout:
+			return True
+		else:
+			return False
 
 	def setTime(self, seconds):
 		applescript="""tell application "VLC"
