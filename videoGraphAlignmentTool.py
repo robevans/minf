@@ -6,14 +6,16 @@ from master import readCSVfile
 import threading
 import time
 
+lock = threading.Lock()
+
 class tool():
 	def __init__(self, data, absolutePathToVideo):
+			if type(data) == str:
+				data = readCSVfile(data)
 			self.graph = graph(data)
 			self.video = videoController(absolutePathToVideo)
 			self.coordinator = coordinator(self.graph, self.video)
 			self.coordinator.start()
-
-lock = threading.Lock()
 
 class coordinator(threading.Thread):
 	def __init__(self, graph, videoController):
@@ -28,14 +30,13 @@ class coordinator(threading.Thread):
 					self.v.setTime((self.g.currentX/len(self.g.data)*self.v.getDuration()))
 					self.g.isUpdated = False
 				else:
-					if self.v.isPlaying() and self.g.isUpdated == False:
+					if self.g.isUpdated == False:
 						lock.acquire()
 						self.g.setLine((float(self.v.getTime())/float(self.v.getDuration()))*len(self.g.data))
 						lock.release()
 				time.sleep(0.1)
 		except KeyboardInterrupt:
 			pass
-
 
 class graph():
 	def __init__(self, data):
@@ -56,15 +57,10 @@ class graph():
 		self.fig.canvas.mpl_connect('button_release_event', self.onRelease)
 
 	def onPress(self,event):
-		#if self.line:
-		#	del(self.ax.lines[-1])
-		#	self.line=None
 		lock.acquire()
 		if event.inaxes and event.xdata > 0:
 			self.currentX = event.xdata
 			self.isUpdated = True
-			#self.line = self.ax.axvline(x=event.xdata, color='red')
-			#self.fig.canvas.draw()
 			self.setLine(event.xdata)
 			self.mousePressed = True
 		lock.release()
@@ -73,27 +69,17 @@ class graph():
 		lock.acquire()
 		if self.mousePressed:
 			if event.inaxes and event.xdata > 0:
-				#if self.line:
-				#	del(self.ax.lines[-1])
-				#	self.line=None
 				self.currentX = event.xdata
 				self.isUpdated = True
 				self.setLine(event.xdata)
 		lock.release()
-				#self.line = self.ax.axvline(x=event.xdata, color='red')
-				#self.fig.canvas.draw()
 
 	def onRelease(self,event):
-		#if self.line:
-		#	del(self.ax.lines[-1])
-		#	self.line=None
 		lock.acquire()
 		if event.inaxes and event.xdata > 0:
 			self.currentX = event.xdata
 			self.isUpdated = True
 			self.setLine(event.xdata)
-			#self.line = self.ax.axvline(x=event.xdata, color='red')
-			#self.fig.canvas.draw()
 		self.mousePressed = None
 		lock.release()
 
@@ -101,8 +87,8 @@ class graph():
 		if self.line:
 			del(self.ax.lines[-1])
 			self.line=None
-		if x>0 and x<=len(self.data):
-			self.line = self.line = self.ax.axvline(x=x, color='red')
+		if x>=0 and x<=len(self.data):
+			self.line = self.line = self.ax.axvline(x=x, color='red', linewidth=5)
 			self.fig.canvas.draw()
 
 class videoController():
