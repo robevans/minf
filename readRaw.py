@@ -6,7 +6,7 @@ def readRaw(input_filename):
 
 	data = []
 	for l in lines:
-		l= map(float,filter(lambda x: x!='' ,l.translate(None,'[]/n')[:-1].split(' ')))
+		l= map(float,filter(lambda x: x!='' ,l.translate(None,',ary()[]/n')[:-1].split(' ')))
 		data.append(l)
 
-	return data
+	return numpy.array(data)
