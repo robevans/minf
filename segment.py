@@ -4,6 +4,18 @@ import numpy as np
 import mins_and_maxs as mm
 import smooth as sm
 import pylab as pl
+from readRaw import readRaw
+from pca import pca
+R = rpy2.robjects.r
+
+def manuallySegment(inputFile, listOfSegmentationPoints, outputFilesPrefix):
+	data = readRaw(inputFile)[:,4:]
+	pcaData = pca(data,3)[0]
+	segments = np.split(data,listOfSegmentationPoints)
+	pcaSegments = np.split(pcaData,listOfSegmentationPoints)
+	for i,seg,pcaSeg in zip(range(len(segments)),segments, pcaSegments):
+		np.savetxt("%s%i%s"%(outputFilesPrefix,i,"RAW.txt"),seg, delimiter=",")
+		np.savetxt("%s%i%s"%(outputFilesPrefix,i,"PCA.txt"),pcaSeg, delimiter=",")
 
 def segmentAndPlot(X, xIsFilename=False):
 	if xIsFilename == True:
@@ -51,17 +63,27 @@ def segmentationPoints(X, xIsFilename=False):
 	if xIsFilename == True:
 		with open(X,'r') as fin:
 			X = np.loadtxt(fin,delimiter=",")
+	
 
-	smoothX = sm.smooth(X,window_len=110,window='flat')
-	(unsmoothedMins,unsmoothedMaxs) = mm.find_mins_and_maxs1D(X)
+	smoothX = sm.smooth(X,window_len=200,window='hamming')
+	#(unsmoothedMins,unsmoothedMaxs) = mm.find_mins_and_maxs1D(X)
 	(smoothedMins,smoothedMaxs) = mm.find_mins_and_maxs1D(smoothX)
+	# Using Dynamic Time Warping to map the smoothed curve onto the original, noisy curve.
+	alignmentOfSmoothedCurveAndOriginal = R.dtw(smoothX, X)
+	warpIndexes=R.warp(alignmentOfSmoothedCurveAndOriginal,True)
+	#pl.plot(warpIndexes,smoothX)
+	#pl.plot(X)
+	#pl.show()
 
-	minSegmentations = mapToOriginal(X,smoothedMins,unsmoothedMins,"mins")
-	maxSegmentations = mapToOriginal(X,smoothedMaxs,unsmoothedMaxs,"maxs")
+	minsMappedToOriginal = sorted(list(set([warpIndexes[smoothedMins[i]] for i in range(len(smoothedMins))])))
+	maxsMappedToOriginal = sorted(list(set([warpIndexes[smoothedMaxs[i]] for i in range(len(smoothedMaxs))])))
 
-	return (minSegmentations,maxSegmentations)
+	#minsMappedToOriginal = mapToOriginalRecursive(X,smoothedMins,unsmoothedMins,"mins")
+	#maxsMappedToOriginal = mapToOriginalRecursive(X,smoothedMaxs,unsmoothedMaxs,"maxs")
 
-def mapToOriginal(originalData, smoothedSegmentationPoints, originalSegmentationPoints, typeOfSegmentationPoints):
+	return (minsMappedToOriginal,maxsMappedToOriginal)
+
+def mapToOriginalRecursive(originalData, smoothedSegmentationPoints, originalSegmentationPoints, typeOfSegmentationPoints):
 	averageSegmentLength = (smoothedSegmentationPoints[-1] - smoothedSegmentationPoints[0]) / (len(smoothedSegmentationPoints)-1)
 	searchWindowDivisor=1
 
