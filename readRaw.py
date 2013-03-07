@@ -1,7 +1,7 @@
 import numpy
 
 def readRaw(input_filename):
-	with open(input_filename) as f:
+	with open(input_filename,'r') as f:
 		lines = f.readlines()
 
 	data = []
