@@ -7,13 +7,15 @@ import pylab
 import smooth
 from quats import plotQuatsFromFile
 from mpl_toolkits.mplot3d import Axes3D
+import matplotlib
 
 def plotSimilarityMatrix(distancesIn2DArray,tickLabels,title="DTW distances cross referenced",savePlot=False):
+	matplotlib.rcParams.update({'font.size': 6})
 	distances = numpy.array(distancesIn2DArray)
 	pylab.figure()
 	pylab.imshow(distances, interpolation='nearest')
 	pylab.xticks(range(len(distances)),tickLabels)
-	pylab.yticks(range(len(distances)),tickLabels)
+	pylab.yticks(range(len(distances)-1,-1,-1),tickLabels)
 	pylab.colorbar()
 	pylab.title(title)
 	pylab.tight_layout()
