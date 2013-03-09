@@ -6,7 +6,13 @@ import smooth as sm
 import pylab as pl
 from readRaw import readRaw
 from pca import pca
-R = rpy2.robjects.r
+from rpy2.robjects import r
+from rpy2.robjects.packages import importr
+import rpy2.robjects.numpy2ri
+rpy2.robjects.numpy2ri.activate()
+#from rpy2 import robjects
+#R = rpy2.robjects.r
+DTW = importr('dtw')
 
 def manuallySegment(inputFile, listOfSegmentationPoints, outputFilesPrefix):
 	data = readRaw(inputFile)[:,4:]
@@ -65,12 +71,12 @@ def segmentationPoints(X, xIsFilename=False):
 			X = np.loadtxt(fin,delimiter=",")
 	
 
-	smoothX = sm.smooth(X,window_len=200,window='hamming')
+	smoothX = sm.smooth(X,window_len=100,window='blackman')
 	#(unsmoothedMins,unsmoothedMaxs) = mm.find_mins_and_maxs1D(X)
 	(smoothedMins,smoothedMaxs) = mm.find_mins_and_maxs1D(smoothX)
 	# Using Dynamic Time Warping to map the smoothed curve onto the original, noisy curve.
-	alignmentOfSmoothedCurveAndOriginal = R.dtw(smoothX, X)
-	warpIndexes=R.warp(alignmentOfSmoothedCurveAndOriginal,True)
+	alignmentOfSmoothedCurveAndOriginal = r.dtw(smoothX, X)
+	warpIndexes=r.warp(alignmentOfSmoothedCurveAndOriginal,True)
 	#pl.plot(warpIndexes,smoothX)
 	#pl.plot(X)
 	#pl.show()
