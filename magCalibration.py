@@ -5,7 +5,7 @@ from pylab import plot, show, array,copy,figure,shape,l2norm, empty, amap, mean,
 from scipy.optimize import leastsq
 from mayavi import mlab
 
-DEVICE_ID = 7
+DEVICE_ID = 6
 
 CAPTURE_TIME_MINS = 0.5
 SEND_FREQ=1
