@@ -23,12 +23,12 @@ def manuallySegment(inputFile, listOfSegmentationPoints, outputFilesPrefix):
 		np.savetxt("%s%i%s"%(outputFilesPrefix,i,"RAW.txt"),seg, delimiter=",")
 		np.savetxt("%s%i%s"%(outputFilesPrefix,i,"PCA.txt"),pcaSeg, delimiter=",")
 
-def segmentAndPlot(X, xIsFilename=False):
+def segmentAndPlot(X, xIsFilename=False, smoothingWindow=100, smoothing='blackman'):
 	if xIsFilename == True:
 		with open(X,'r') as fin:
 			X = np.loadtxt(fin,delimiter=",")
 
-	(mins,maxs) = segmentationPoints(X)
+	(mins,maxs) = segmentationPoints(X, windowSize=smoothingWindow)
 	pl.figure(figsize=(11,9))
 	pl.plot(X)
 	for m in mins:
@@ -65,13 +65,13 @@ def segmentAndSave(X, segmentationPoints="useX", xIsFilename=False, segmentBy="m
 		i+=1
 		print segments
 
-def segmentationPoints(X, xIsFilename=False):
+def segmentationPoints(X, xIsFilename=False, windowSize=100, smoothing='blackman'):
 	if xIsFilename == True:
 		with open(X,'r') as fin:
 			X = np.loadtxt(fin,delimiter=",")
 	
 
-	smoothX = sm.smooth(X,window_len=100,window='blackman')
+	smoothX = sm.smooth(X,window_len=windowSize,window=smoothing)
 	#(unsmoothedMins,unsmoothedMaxs) = mm.find_mins_and_maxs1D(X)
 	(smoothedMins,smoothedMaxs) = mm.find_mins_and_maxs1D(smoothX)
 	# Using Dynamic Time Warping to map the smoothed curve onto the original, noisy curve.
