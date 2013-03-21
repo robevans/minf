@@ -6,6 +6,30 @@ import quats
 import pca
 import plot
 import progressbar
+import random
+import armExercisesDatabase
+
+def similarityMatrixForLowDimArmExercisesLeftHand(segmentsFromEach=1, database=None):
+	if database is None:
+		data=armExercisesDatabase.db(True)
+	else:
+		data = database
+
+	segs10l=random.sample(data.segs['10l'][1],segmentsFromEach)
+	segs20l=random.sample(data.segs['20l'][1],segmentsFromEach)
+	segs30l=random.sample(data.segs['30l'][1],segmentsFromEach)
+	segs40l=random.sample(data.segs['40l'][1],segmentsFromEach)
+	segs50l=random.sample(data.segs['50l'][1],segmentsFromEach)
+	segs60l=random.sample(data.segs['60l'][1],segmentsFromEach)
+	segs70l=random.sample(data.segs['70l'][1],segmentsFromEach)
+	segs80l=random.sample(data.segs['80l'][1],segmentsFromEach)
+	segs90l=random.sample(data.segs['90l'][1],segmentsFromEach)
+
+	names = ["10"]*segmentsFromEach+["20"]*segmentsFromEach+["30"]*segmentsFromEach+["40"]*segmentsFromEach+["50"]*segmentsFromEach+["60"]*segmentsFromEach+["70"]*segmentsFromEach+["80"]*segmentsFromEach+["90"]*segmentsFromEach
+	weights = [float(sum(t))/float(len(t)) for t in zip(data.pca['10l'][1][1],data.pca['20l'][1][1],data.pca['30l'][1][1],data.pca['50l'][1][1],data.pca['60l'][1][1],data.pca['70l'][1][1],data.pca['80l'][1][1],data.pca['90l'][1][1])]
+
+	print "Calculating similarities..."
+	m.similarityMatrix(segs10l+segs20l+segs30l+segs40l+segs50l+segs60l+segs70l+segs80l+segs90l,names,weights,"Arm exercises, Low Dim",savePlot=True)
 
 def similarityMatrixForExpandingCirclesHighDim():
 	print "Reading data..."
@@ -102,15 +126,6 @@ def similarityMatrixForExpandingCirclesLowDim():
 	print "Calculating similarities..."
 	m.similarityMatrix(segs0a+segs5a+segs10a+segs15a+segs20a+segs25a+segs0b+segs5b+segs10b+segs15b+segs20b+segs25b,names,weights,"Similarity Matrix using two principal components",savePlot=True)
 
-def plotPCA3d(filename):
-	(lowDims,v)=pca.pcaFromFile(filename,n_components=2)
-	title = "".join(filename.split('/')[-1].split('.')[:-1])
-	plot.plotPCA3D(lowDims,title)
-
-def plotSegments():
-	m.getLowDimensionalSegments(m.readCSVfile("captures/HorizontalArmSpin-Jibran.csv"),n_components=1,plt=True,title="Large horizontal arm spin segments")
-	m.getLowDimensionalSegments(m.readCSVfile("captures/HorizontalArmSpinLittleCircles-Jibran.csv"),n_components=1,plt=True,title="Small horizontal arm spin segments")
-
 def highDimRawSimilarity():
 	raw_h_large=m.getHighDimensionalSegments(m.readCSVfile("captures/HorizontalArmSpin-Jibran.csv"))
 	raw_h_small=m.getHighDimensionalSegments(m.readCSVfile("captures/HorizontalArmSpinLittleCircles-Jibran.csv"))
@@ -170,3 +185,12 @@ def allMotionslowDimRawSimilarity(n_components=3,savePlot=False,title="Similarit
 	averageWeights = [(a+b+c+d+e)/5.0 for (a,b,c,d,e) in zip(weights_v1,weights_v2,weights_h1,weights_h2,weights_h3)]
 	# Crunch similarity matrix
 	m.similarityMatrix(raw_v1+raw_v2+raw_h1+raw_h2+raw_h3,names,averageWeights,title,savePlot)
+
+def plotPCA3d(filename):
+	(lowDims,v)=pca.pcaFromFile(filename,n_components=2)
+	title = "".join(filename.split('/')[-1].split('.')[:-1])
+	plot.plotPCA3D(lowDims,title)
+
+def plotSegments():
+	m.getLowDimensionalSegments(m.readCSVfile("captures/HorizontalArmSpin-Jibran.csv"),n_components=1,plt=True,title="Large horizontal arm spin segments")
+	m.getLowDimensionalSegments(m.readCSVfile("captures/HorizontalArmSpinLittleCircles-Jibran.csv"),n_components=1,plt=True,title="Small horizontal arm spin segments")
