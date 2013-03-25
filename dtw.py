@@ -17,7 +17,7 @@ def getDTWdist2DweightedSum(queryDims,referenceDims,weights):
 		return dist
 	else:
 		import sys
-		sys.exit("Bad input shapes")
+		sys.exit("Bad input shapes for Dynamic Time Warp")
 
 
 def drawGraphs(queryFile, referenceFile):
