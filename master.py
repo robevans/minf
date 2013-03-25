@@ -9,6 +9,50 @@ import segment
 import pylab as pl
 import progressbar
 
+def similarityMatrix(segments,segmentNames,weights,title,savePlot=False):
+	print "Constructing similarity matrix"
+	bar = progressbar.ProgressBar(maxval=len(segments)**2, widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+	bar.start()
+	progressCount = 0
+	distances = []
+	for i,k in zip(range(len(segments)),reversed(range(len(segments)))):
+		distances.append([])
+		for j in range(len(segments)):
+			distances[i].append(dtw.getDTWdist2DweightedSum(segments[k],segments[j],weights))
+			progressCount+=1
+			bar.update(progressCount)
+	bar.finish()
+	plot.plotSimilarityMatrix(distances,segmentNames,title,savePlot)
+
+def averageSimilarityMatrix(dictOfClasses, dictOfWeights,title,savePlot=False):
+	print "Constructing similarity matrix"
+	if sorted(dictOfClasses.keys()) != sorted(dictOfWeights.keys()):
+		import sys
+		sys.exit("Mismatching keys between weights and classes to compute average similarity matrix")
+	bar = progressbar.ProgressBar(maxval=len(dictOfClasses.keys())**2, widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+	bar.start()
+	progressCount = 0
+	distances = []
+
+	for i,k in zip(range(len(dictOfClasses.keys())),reversed(sorted(dictOfClasses.keys()))):
+		distances.append([])
+		for j in sorted(dictOfClasses.keys()):
+			distances[i].append(interClassDistance(dictOfClasses[k],dictOfClasses[j],dictOfWeights[k],dictOfWeights[j]))
+			progressCount+=1
+			bar.update(progressCount)
+	bar.finish()
+
+	plot.plotSimilarityMatrix(distances,sorted(dictOfClasses.keys()),title,savePlot)
+
+def interClassDistance(classA,classB,classAweights,classBweights):
+	summedDistances = 0
+	for a,aw in zip(classA,classAweights):
+		for b,bw in zip(classB,classBweights):
+			weights = [float(sum(t))/float(len(t)) for t in zip(aw,bw)]
+			summedDistances += dtw.getDTWdist2DweightedSum(a,b,weights)
+	averageDistance = summedDistances / (len(classA)*len(classB))
+	return averageDistance
+
 def compareTwoFiles(f1,f2,n_components=3, raw=False, title="similarityMatrix"):
 	if raw:
 		data1 = readRaw(f1)[26:,4:]
@@ -26,20 +70,6 @@ def compareTwoFiles(f1,f2,n_components=3, raw=False, title="similarityMatrix"):
 		names.append('2')
 
 	similarityMatrix(ls1+ls2,names,averageWeights,title)
-
-def similarityMatrix(segments,segmentNames,weights,title,savePlot=False):
-	distances = []
-	bar = progressbar.ProgressBar(maxval=len(segments)**2, widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
-	bar.start()
-	progressCount = 0
-	for i,k in zip(range(len(segments)),reversed(range(len(segments)))):
-		distances.append([])
-		for j in range(len(segments)):
-			distances[i].append(dtw.getDTWdist2DweightedSum(segments[k],segments[j],weights))
-			progressCount+=1
-			bar.update(progressCount)
-	bar.finish()
-	plot.plotSimilarityMatrix(distances,segmentNames,title,savePlot)
 
 def getQuaternionSegmentsByRawData(highDimensionalData,quaternionData):
 	(lowDimensionalData,explainedVariance) = pca.pca(highDimensionalData,n_components=1)
