@@ -9,6 +9,27 @@ import progressbar
 import random
 import armExercisesDatabase
 
+def simMatrixAverageClassDistancesHighDimArmExMergeLeftRight(db=None):
+	if db is None:
+		db = armExercisesDatabase.db(True)
+	LRclasses = {key:value[1] for (key,value) in zip(db.data,db.segs.values())}
+	classes = {}
+	for key,value in LRclasses.iteritems():
+		for segment in value:
+			classes.setdefault(key[:-1], []).append(segment) # Merge left and right hand motions together
+	weights = {key:[[1]*np.shape(segments[0])[1]]*len(segments) for (key,segments) in zip(classes.keys(),classes.values())}
+
+	m.averageSimilarityMatrix(classes, weights, "Distances between clusters of exercises", savePlot=True)
+
+def simMatrixAverageClassDistancesHighDimArmEx(db=None):
+	if db is None:
+		db = armExercisesDatabase.db(True)
+	classes = {key:value[1] for (key,value) in zip(db.data,db.segs.values())}
+	classes = {key[:-1]:classes[key] for key in classes.keys() if 'l' in key} # Left hand motions only
+	weights = {key:[[1]*np.shape(segments[0])[1]]*len(segments) for (key,segments) in zip(classes.keys(),classes.values())}
+
+	m.averageSimilarityMatrix(classes, weights, "Distances between clusters of exercises with left arm", savePlot=True)
+
 def similarityMatrixForLowDimArmExercisesLeftHand(segmentsFromEach=1, database=None):
 	if database is None:
 		data=armExercisesDatabase.db(True)
