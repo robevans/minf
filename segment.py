@@ -32,9 +32,9 @@ def segmentAndPlot(X, xIsFilename=False, smoothingWindow=100, smoothing='blackma
 	pl.figure(figsize=(11,9))
 	pl.plot(X)
 	for m in mins:
-		pl.axvline(m,color='g')
+		pl.axvline(m,color='g',linewidth=3)
 	for m in maxs:
-		pl.axvline(m,color='r')
+		pl.axvline(m,color='r',linewidth=3)
 
 	pl.xlabel('Time (frames)')
 	pl.ylabel('Latent co-ordinate')
