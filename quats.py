@@ -1,6 +1,6 @@
 __author__ = 'Robert Evans'
 
-import OrientSocket
+import OrientSocketPreTDMA
 import numpy
 import pylab
 import pca
@@ -27,7 +27,7 @@ def rawDataFileToQuats(input_filename):
 		mag = numpy.array(numbers[10:13])
 		data.append((nodeID, accelRTC, gyroRTC, magRTC, accel, gyro, mag))
 
-	panda = OrientSocket.Panda(live=False)
+	panda = OrientSocketPreTDMA.Panda(live=False)
 
 	quats = []
 	for d in data:
