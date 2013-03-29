@@ -20,7 +20,7 @@ def armExercisesHDParallelsimMatrix(db=None):
 			classes.setdefault(key[:-1], []).append(segment) # Merge left and right hand motions together
 	weights = {key:[[1]*np.shape(segments[0])[1]]*len(segments) for (key,segments) in zip(classes.keys(),classes.values())}
 
-	parallelSimilarityMatrix.averageSimilarityMatrix(classes, weights, savePlot=True)
+	parallelSimilarityMatrix.averageSimilarityMatrix(classes, weights, "Arm Exercise Cluster Distances", savePlot=True)
 
 def armExercisesHDsimMatrix(db=None):
 	if db is None:
