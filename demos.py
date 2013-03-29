@@ -8,11 +8,24 @@ import plot
 import progressbar
 import random
 import armExercisesDatabase
+import parallelSimilarityMatrix
 
-def simMatrixAverageClassDistancesHighDimArmExMergeLeftRight(db=None):
+def armExercisesHDParallelsimMatrix(db=None):
 	if db is None:
 		db = armExercisesDatabase.db(True)
-	LRclasses = {key:value[1] for (key,value) in zip(db.data,db.segs.values())}
+	LRclasses = {key:value for (key,value) in zip(db.HDsegs.keys(),[sum(l,[]) for l in db.HDsegs.values()])}
+	classes = {}
+	for key,value in LRclasses.iteritems():
+		for segment in value:
+			classes.setdefault(key[:-1], []).append(segment) # Merge left and right hand motions together
+	weights = {key:[[1]*np.shape(segments[0])[1]]*len(segments) for (key,segments) in zip(classes.keys(),classes.values())}
+
+	parallelSimilarityMatrix.averageSimilarityMatrix(classes, weights, savePlot=True)
+
+def armExercisesHDsimMatrix(db=None):
+	if db is None:
+		db = armExercisesDatabase.db(True)
+	LRclasses = {key:random.sample(value,1) for (key,value) in zip(db.HDsegs.keys(),[sum(l,[]) for l in db.HDsegs.values()])}
 	classes = {}
 	for key,value in LRclasses.iteritems():
 		for segment in value:

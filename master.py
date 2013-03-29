@@ -91,9 +91,9 @@ def getHighDimensionalSegments(highDimensionalData):
 	segments = pl.split(highDimensionalData,maxs)[1:-1]
 	return segments
 
-def getHighAndLowDimSegments(highDimensionalData, n_components=3):
+def getHighAndLowDimSegments(highDimensionalData, n_components=3, smoothingWindow=100):
 	(lowDimensionalData,explainedVariance) = pca.pca(highDimensionalData,n_components)
-	(mins,maxs) = segment.segmentationPoints(lowDimensionalData[:,0])
+	(mins,maxs) = segment.segmentationPoints(lowDimensionalData[:,0], windowSize=smoothingWindow)
 	HDsegments = pl.split(highDimensionalData,maxs)[1:-1]
 	LDsegments = pl.split(lowDimensionalData,maxs)[1:-1]
 	return (HDsegments,LDsegments,explainedVariance)
