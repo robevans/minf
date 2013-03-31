@@ -10,7 +10,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib
 
 def plotSimilarityMatrix(distancesIn2DArray,tickLabels,title="DTW distances cross referenced",savePlot=False):
-	pylab.matplotlib.rcParams.update({'font.size': 18})
+	pylab.matplotlib.rcParams.update({'font.size': 16})
 	distances = numpy.array(distancesIn2DArray)
 	pylab.figure()
 	pylab.imshow(distances, interpolation='nearest')

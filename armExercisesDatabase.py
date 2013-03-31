@@ -130,6 +130,9 @@ class db:
 		self.pca = {'10l':[PCAdan10l,PCArobert10l,PCAlaura10l],'20l':[PCAdan20l,PCArobert20l,PCAlaura20l],'30l':[PCAdan30l,PCArobert30l,PCAlaura30l],'40l':[PCAdan40l,PCArobert40l,PCAlaura40l],'50l':[PCAdan50l,PCArobert50l,PCAlaura50l],'60l':[PCAdan60l,PCArobert60l,PCAlaura60l],'70l':[PCAdan70l,PCArobert70l,PCAlaura70l],'80l':[PCAdan80l,PCArobert80l,PCAlaura80l],'90l':[PCAdan90l,PCArobert90l,PCAlaura90l],
 		            '10r':[PCAdan10r,PCArobert10r,PCAlaura10r],'20r':[PCAdan20r,PCArobert20r,PCAlaura20r],'30r':[PCAdan30r,PCArobert30r,PCAlaura30r],'40r':[PCAdan40r,PCArobert40r,PCAlaura40r],'50r':[PCAdan50r,PCArobert50r,PCAlaura50r],'60r':[PCAdan60r,PCArobert60r,PCAlaura60r],'70r':[PCAdan70r,PCArobert70r,PCAlaura70r],'80r':[PCAdan80r,PCArobert80r,PCAlaura80r],'90r':[PCAdan90r,PCArobert90r,PCAlaura90r]}
 
+		self.pcaDataOnly = {key:[tuple[0] for tuple in value] for key,value in self.pca.iteritems()}
+		self.explainedVariances = {key:[tuple[1] for tuple in value] for key,value in self.pca.iteritems()}
+		self.averageExplainedVariance = [float(sum(t))/len(t) for t in zip(*[[float(sum(t))/len(t) for t in zip(*l)] for l in self.explainedVariances.values()])]
 
 		if computeSegments:
 			self.computeSegments()
@@ -198,8 +201,7 @@ class db:
 		laura90r=m.getHighAndLowDimSegments(self.data['90r'][2], n_components=9, smoothingWindow=100); progress += 1; bar.update(progress)
 		laura90l=m.getHighAndLowDimSegments(self.data['90l'][2], n_components=9, smoothingWindow=100); progress += 1; bar.update(progress)
 
-		
-		#Delete bad segments and throw some away anyway - there's plenty!
+		#Delete bad segments and throw some away anyway - there are plenty to spare!
 		
 		dan10r=([],[],dan10r[2]) # This was garbage
 		dan10l=(dan10l[0][2:-2],dan10l[1][2:-2],dan10l[2])

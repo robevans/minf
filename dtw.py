@@ -19,12 +19,12 @@ def getDTWdist2DweightedSum(queryDims,referenceDims,weights):
 		import sys
 		sys.exit("Bad input shapes for Dynamic Time Warp")
 
-
-def drawGraphs(queryFile, referenceFile):
-	with open(queryFile,'r') as fquery:
-		query = np.loadtxt(fquery,delimiter=",")
-	with open(referenceFile,'r') as freference:
-		reference = np.loadtxt(freference,delimiter=",")
+def drawGraphs(query, reference, fromFile=True):
+	if fromFile:
+		with open(query,'r') as fquery:
+			query = np.loadtxt(fquery,delimiter=",")
+		with open(reference,'r') as freference:
+			reference = np.loadtxt(freference,delimiter=",")
 
 	alignment = R.dtw(query, reference, keep=True)
 
@@ -32,12 +32,12 @@ def drawGraphs(queryFile, referenceFile):
 
 	R.X11()
 	R.dtwPlotTwoWay(alignment)
-	#R.title(main = "DTW distance: %s for %s vs %s" % (dist,queryFile,referenceFile))
+	#R.title(main = "DTW distance: %s for %s vs %s" % (dist,query,reference))
 	R.title(main = "DTW distance: %s for Horizontal spin vs Vertical spin" % (dist))
 
 	R.X11()
 	R.dtwPlotThreeWay(alignment,main="")
-	#R.title(main = "DTW distance: %s for %s vs %s" % (dist,queryFile,referenceFile))
+	#R.title(main = "DTW distance: %s for %s vs %s" % (dist,query,reference))
 	R.title(main = "Warping function for Horizontal spin vs Vertical spin")
 
 	from enableInteractivity import enableInteractivity

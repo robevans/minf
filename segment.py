@@ -23,7 +23,7 @@ def manuallySegment(inputFile, listOfSegmentationPoints, outputFilesPrefix):
 		np.savetxt("%s%i%s"%(outputFilesPrefix,i,"RAW.txt"),seg, delimiter=",")
 		np.savetxt("%s%i%s"%(outputFilesPrefix,i,"PCA.txt"),pcaSeg, delimiter=",")
 
-def segmentAndPlot(X, xIsFilename=False, smoothingWindow=100, smoothing='blackman'):
+def segmentAndPlot(X, xIsFilename=False, smoothingWindow=100, smoothing='blackman', title='Automatic Segmentation'):
 	if xIsFilename == True:
 		with open(X,'r') as fin:
 			X = np.loadtxt(fin,delimiter=",")
@@ -32,17 +32,17 @@ def segmentAndPlot(X, xIsFilename=False, smoothingWindow=100, smoothing='blackma
 	pl.figure(figsize=(11,9))
 	pl.plot(X)
 	for m in mins:
-		pl.axvline(m,color='g',linewidth=3)
+		pl.axvline(m,color='g',linewidth=1.5)
 	for m in maxs:
-		pl.axvline(m,color='r',linewidth=3)
+		pl.axvline(m,color='r',linewidth=1.5)
 
 	pl.xlabel('Time (frames)')
 	pl.ylabel('Latent co-ordinate')
-	pl.title('Vertical Arm Spins - Post PCA segmentation')
+	pl.title(title)
 	#pl.legend((''))
 
 	pl.show()
-	#pl.savefig('/Users/robertevans/Desktop/segments.pdf', format='pdf')
+	#pl.savefig('/Users/robertevans/Desktop/pcaSegArmEx90r.pdf', format='pdf')
 
 def segmentAndSave(X, segmentationPoints="useX", xIsFilename=False, segmentBy="maxs",trimFrom=None,trimTo=float('inf'),filePrefix="./segments/V",fileSuffix=".csv"):
 	if xIsFilename == True:
