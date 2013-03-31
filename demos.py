@@ -20,7 +20,21 @@ def armExercisesHDParallelsimMatrix(db=None):
 			classes.setdefault(key[:-1], []).append(segment) # Merge left and right hand motions together
 	weights = {key:[[1]*np.shape(segments[0])[1]]*len(segments) for (key,segments) in zip(classes.keys(),classes.values())}
 
-	parallelSimilarityMatrix.averageSimilarityMatrix(classes, weights, "Arm Exercise Cluster Distances", savePlot=True)
+	parallelSimilarityMatrix.averageSimilarityMatrix(classes, weights, "High Dimensional Arm Cluster Comparisons", savePlot=True)
+
+def armExercisesLDParallelsimMatrix(db=None):
+	if db is None:
+		db = armExercisesDatabase.db(True)
+	LRclasses = {key:value for (key,value) in zip(db.LDsegs.keys(),[sum(l,[]) for l in db.LDsegs.values()])}
+	classes = {}
+	for key,value in LRclasses.iteritems():
+		for segment in value:
+			classes.setdefault(key[:-1], []).append(segment) # Merge left and right hand motions together
+
+	averageWeight = [float(sum(t))/len(t) for t in zip(*[[float(sum(t))/len(t) for t in zip(*l)] for l in db.explainedVariances.values()])]
+	weights = {key:[averageWeight]*len(value) for key,value in classes.iteritems()}
+	parallelSimilarityMatrix.averageSimilarityMatrix(classes, weights, "Arm Exercise Clusters - Low Dimensional Distances", savePlot=True)
+
 
 def armExercisesHDsimMatrix(db=None):
 	if db is None:
