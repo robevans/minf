@@ -9,7 +9,22 @@ import segment
 import pylab as pl
 import progressbar
 
-def similarityMatrix(segments,segmentNames,weights,title,savePlot=False):
+def similarityMatrix(segments,segmentNames,title,savePlot=False):  #UNTESTED
+	print "Constructing similarity matrix"
+	bar = progressbar.ProgressBar(maxval=len(segments)**2, widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+	bar.start()
+	progressCount = 0
+	distances = []
+	for i,k in zip(range(len(segments)),reversed(range(len(segments)))):
+		distances.append([])
+		for j in range(len(segments)):
+			distances[i].append(dtw.dist(segments[k],segments[j]))
+			progressCount+=1
+			bar.update(progressCount)
+	bar.finish()
+	plot.plotSimilarityMatrix(distances,segmentNames,title,savePlot)
+
+def similarityMatrixWeighted(segments,segmentNames,weights,title,savePlot=False):
 	print "Constructing similarity matrix"
 	bar = progressbar.ProgressBar(maxval=len(segments)**2, widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
 	bar.start()
@@ -24,7 +39,7 @@ def similarityMatrix(segments,segmentNames,weights,title,savePlot=False):
 	bar.finish()
 	plot.plotSimilarityMatrix(distances,segmentNames,title,savePlot)
 
-def averageSimilarityMatrix(dictOfClasses, dictOfWeights,title,savePlot=False):
+def averageSimilarityMatrix(dictOfClasses, dictOfWeights=None,title,savePlot=False):
 	print "Constructing similarity matrix"
 	if sorted(dictOfClasses.keys()) != sorted(dictOfWeights.keys()):
 		import sys
@@ -37,19 +52,25 @@ def averageSimilarityMatrix(dictOfClasses, dictOfWeights,title,savePlot=False):
 	for i,k in zip(range(len(dictOfClasses.keys())),reversed(sorted(dictOfClasses.keys()))):
 		distances.append([])
 		for j in sorted(dictOfClasses.keys()):
-			distances[i].append(interClassDistance(dictOfClasses[k],dictOfClasses[j],dictOfWeights[k],dictOfWeights[j]))
+			if dictOfWeights == None:
+				distances[i].append(interClassDistance(dictOfClasses[k],dictOfClasses[j]))
+			else:
+				distances[i].append(interClassDistance(dictOfClasses[k],dictOfClasses[j],dictOfWeights[k],dictOfWeights[j]))
 			progressCount+=1
 			bar.update(progressCount)
 	bar.finish()
 
 	plot.plotSimilarityMatrix(distances,sorted(dictOfClasses.keys()),title,savePlot)
 
-def interClassDistance(classA,classB,classAweights,classBweights):
+def interClassDistance(classA,classB,classAweights=None,classBweights=None): #Not tested with weights free version
 	summedDistances = 0
 	for a,aw in zip(classA,classAweights):
 		for b,bw in zip(classB,classBweights):
 			weights = [float(sum(t))/float(len(t)) for t in zip(aw,bw)]
-			summedDistances += dtw.getDTWdist2DweightedSum(a,b,weights)
+			if (classAweights == None or classBweights == None):
+				summedDistances += dtw.dist(a,b)
+			else:
+				summedDistances += dtw.getDTWdist2DweightedSum(a,b,weights)
 	averageDistance = summedDistances / (len(classA)*len(classB))
 	return averageDistance
 

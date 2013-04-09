@@ -6,10 +6,12 @@ import progressbar
 from multiprocessing import Pool, Lock
 lock = Lock()
 
+# Compute similarity matricies using inter-class distances.  This would be an object but pickling doesn't work with object methods for multiprocessing.
 def averageSimilarityMatrix(dictOfClassesLocal, dictOfWeightsLocal,title="Cluster similarity matrix",savePlot=False):
 	global bar, progressCount, dictOfClasses, dictOfWeights, arguments, distances
 	dictOfClasses = dictOfClassesLocal
 	dictOfWeights = dictOfWeightsLocal
+	print "Computing similarity matrix..."
 	bar = progressbar.ProgressBar(maxval=len(dictOfClasses.keys())**2, widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
 	bar.start()
 	progressCount = 0
@@ -40,7 +42,8 @@ def interClassDistance(taskIndex):
 	for a,aw in zip(classA,classAweights):
 		for b,bw in zip(classB,classBweights):
 			weights = [float(sum(t))/float(len(t)) for t in zip(aw,bw)]
-			summedDistances += dtw.getDTWdist2DweightedSum(a,b,weights)
+			#summedDistances += dtw.getDTWdist2DweightedSum(a,b,weights)
+			summedDistances += dtw.dist(a,b) # Faster method that doesn't use weights
 	averageDistance = summedDistances / (len(classA)*len(classB))
 	return (taskIndex,averageDistance)
 
