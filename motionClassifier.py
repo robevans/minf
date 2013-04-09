@@ -139,7 +139,7 @@ class circlesData:
 		self.data10c=m.readRaw("captures/mechanicalArm/ArmLength60cm/Clockwise/radius10cmHorizontal.txt")[26:,4:]
 		self.data15c=m.readRaw("captures/mechanicalArm/ArmLength60cm/Clockwise/radius15cmHorizontal.txt")[26:,4:]
 		self.data20c=m.readRaw("captures/mechanicalArm/ArmLength60cm/Clockwise/radius20cmHorizontal.txt")[26:,4:]
-		self.data25c=m.readRaw("captures/mechanicalArm/ArmLength60cm/Clockwise/radius25cmHorizontal.txt")[26:,4:];
+		self.data25c=m.readRaw("captures/mechanicalArm/ArmLength60cm/Clockwise/radius25cmHorizontal.txt")[26:,4:]
 		progress += 1; bar.update(progress)
 
 		(self.HDsegs0a,self.LDsegs0a,self.w0a) = m.getHighAndLowDimSegments(self.data0a, n_components=9); progress += 1; bar.update(progress)

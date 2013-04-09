@@ -10,6 +10,20 @@ import random
 import armExercisesDatabase
 import parallelSimilarityMatrix
 
+def armExercisesIndividualSimMatrix(db=None, subjectNumber=2):
+	if db is None:
+		db = armExercisesDatabase.db(True)
+	LRclasses = {key:value for (key,value) in zip(db.LDsegs.keys(),[l[subjectNumber] for l in db.LDsegs.values()])}
+	classes = {}
+	for key,value in LRclasses.iteritems():
+		for segment in value:
+			classes.setdefault(key[:-1], []).append(segment) # Merge left and right hand motions together
+
+	averageWeight = [float(sum(t))/len(t) for t in zip(*[[float(sum(t))/len(t) for t in zip(*l)] for l in db.explainedVariances.values()])]
+	weights = {key:[averageWeight]*len(value) for key,value in classes.iteritems()}
+
+	parallelSimilarityMatrix.averageSimilarityMatrix(classes, weights, "Subject C: PCA data distances", savePlot=True)
+
 def armExercisesHDParallelsimMatrix(db=None):
 	if db is None:
 		db = armExercisesDatabase.db(True)
