@@ -68,8 +68,18 @@ class db:
 		self.data = {'10l':[dan10l,robert10l,laura10l],'20l':[dan20l,robert20l,laura20l],'30l':[dan30l,robert30l,laura30l],'40l':[dan40l,robert40l,laura40l],'50l':[dan50l,robert50l,laura50l],'60l':[dan60l,robert60l,laura60l],'70l':[dan70l,robert70l,laura70l],'80l':[dan80l,robert80l,laura80l],'90l':[dan90l,robert90l,laura90l],
 		             '10r':[dan10r,robert10r,laura10r],'20r':[dan20r,robert20r,laura20r],'30r':[dan30r,robert30r,laura30r],'40r':[dan40r,robert40r,laura40r],'50r':[dan50r,robert50r,laura50r],'60r':[dan60r,robert60r,laura60r],'70r':[dan70r,robert70r,laura70r],'80r':[dan80r,robert80r,laura80r],'90r':[dan90r,robert90r,laura90r]}
 
+		self.accelData = {k:[a[:,0:3] for a in v] for k,v in self.data.iteritems()}
+		self.gyroData = {k:[a[:,3:6] for a in v] for k,v in self.data.iteritems()}
+		self.magData = {k:[a[:,6:9] for a in v] for k,v in self.data.iteritems()}
+
 		print "Computing dimensionality reduction..."
+
+		self.pca = {k:[pca.pca(a,n_components=9) for a in v] for k,v in db.data.iteritems()}
+		self.accelData_pca = {k:[p.pca(a,n_components=3) for a in v] for k,v in db.accelData.iteritems()}
+		self.gyroData_pca = {k:[p.pca(a,n_components=3) for a in v] for k,v in db.gyroData.iteritems()}
+		self.magData_pca = {k:[p.pca(a,n_components=3) for a in v] for k,v in db.magData.iteritems()}
 		
+		"""
 		PCAdan10r=p.pca(dan10r,n_components=9)
 		PCAdan10l=p.pca(dan10l,n_components=9)
 		PCAdan20r=p.pca(dan20r,n_components=9)
@@ -129,6 +139,7 @@ class db:
 
 		self.pca = {'10l':[PCAdan10l,PCArobert10l,PCAlaura10l],'20l':[PCAdan20l,PCArobert20l,PCAlaura20l],'30l':[PCAdan30l,PCArobert30l,PCAlaura30l],'40l':[PCAdan40l,PCArobert40l,PCAlaura40l],'50l':[PCAdan50l,PCArobert50l,PCAlaura50l],'60l':[PCAdan60l,PCArobert60l,PCAlaura60l],'70l':[PCAdan70l,PCArobert70l,PCAlaura70l],'80l':[PCAdan80l,PCArobert80l,PCAlaura80l],'90l':[PCAdan90l,PCArobert90l,PCAlaura90l],
 		            '10r':[PCAdan10r,PCArobert10r,PCAlaura10r],'20r':[PCAdan20r,PCArobert20r,PCAlaura20r],'30r':[PCAdan30r,PCArobert30r,PCAlaura30r],'40r':[PCAdan40r,PCArobert40r,PCAlaura40r],'50r':[PCAdan50r,PCArobert50r,PCAlaura50r],'60r':[PCAdan60r,PCArobert60r,PCAlaura60r],'70r':[PCAdan70r,PCArobert70r,PCAlaura70r],'80r':[PCAdan80r,PCArobert80r,PCAlaura80r],'90r':[PCAdan90r,PCArobert90r,PCAlaura90r]}
+		"""
 
 		self.pcaDataOnly = {key:[tuple[0] for tuple in value] for key,value in self.pca.iteritems()}
 		self.explainedVariances = {key:[tuple[1] for tuple in value] for key,value in self.pca.iteritems()}

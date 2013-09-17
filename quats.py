@@ -1,6 +1,6 @@
 __author__ = 'Robert Evans'
 
-import OrientSocketPreTDMA
+import orient.OrientSocketPreTDMA
 import numpy
 import pylab
 import pca

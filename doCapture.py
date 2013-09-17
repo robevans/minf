@@ -1,6 +1,6 @@
 __author__ = 'Robert Evans'
 
-import commsTDMA
+import orient.commsTDMA
 from time import sleep
 
 if __name__ == '__main__':

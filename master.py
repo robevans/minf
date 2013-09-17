@@ -39,7 +39,7 @@ def similarityMatrixWeighted(segments,segmentNames,weights,title,savePlot=False)
 	bar.finish()
 	plot.plotSimilarityMatrix(distances,segmentNames,title,savePlot)
 
-def averageSimilarityMatrix(dictOfClasses, dictOfWeights=None,title,savePlot=False):
+def averageSimilarityMatrix(dictOfClasses, title, dictOfWeights=None, savePlot=False):
 	print "Constructing similarity matrix"
 	if sorted(dictOfClasses.keys()) != sorted(dictOfWeights.keys()):
 		import sys
