@@ -3,6 +3,7 @@ __author__ = 'Robert Evans'
 import master as m
 import progressbar
 import pca as p
+from numpy import concatenate
 
 class db:
 	def __init__ (self, computeSegments=False):
@@ -72,74 +73,20 @@ class db:
 		self.gyroData = {k:[a[:,3:6] for a in v] for k,v in self.data.iteritems()}
 		self.magData = {k:[a[:,6:9] for a in v] for k,v in self.data.iteritems()}
 
+		self.accelWithGyroData = {k:[a[:,0:6] for a in v] for k,v in self.data.iteritems()}
+		self.accelWithMagData = {k:[concatenate((a[:,0:3],a[:,6:9]),axis=1) for a in v] for k,v in self.data.iteritems()}
+		self.gyroWithMagData = {k:[a[:,3:9] for a in v] for k,v in self.data.iteritems()}
+
 		print "Computing dimensionality reduction..."
 
-		self.pca = {k:[pca.pca(a,n_components=9) for a in v] for k,v in db.data.iteritems()}
-		self.accelData_pca = {k:[p.pca(a,n_components=3) for a in v] for k,v in db.accelData.iteritems()}
-		self.gyroData_pca = {k:[p.pca(a,n_components=3) for a in v] for k,v in db.gyroData.iteritems()}
-		self.magData_pca = {k:[p.pca(a,n_components=3) for a in v] for k,v in db.magData.iteritems()}
+		self.pca = {k:[p.pca(a,n_components=9) for a in v] for k,v in self.data.iteritems()}
+		self.accelData_pca = {k:[p.pca(a,n_components=3) for a in v] for k,v in self.accelData.iteritems()}
+		self.gyroData_pca = {k:[p.pca(a,n_components=3) for a in v] for k,v in self.gyroData.iteritems()}
+		self.magData_pca = {k:[p.pca(a,n_components=3) for a in v] for k,v in self.magData.iteritems()}
 		
-		"""
-		PCAdan10r=p.pca(dan10r,n_components=9)
-		PCAdan10l=p.pca(dan10l,n_components=9)
-		PCAdan20r=p.pca(dan20r,n_components=9)
-		PCAdan20l=p.pca(dan20l,n_components=9)
-		PCAdan30r=p.pca(dan30r,n_components=9)
-		PCAdan30l=p.pca(dan30l,n_components=9)
-		PCAdan40r=p.pca(dan40r,n_components=9)
-		PCAdan40l=p.pca(dan40l,n_components=9)
-		PCAdan50r=p.pca(dan50r,n_components=9)
-		PCAdan50l=p.pca(dan50l,n_components=9)
-		PCAdan60r=p.pca(dan60r,n_components=9)
-		PCAdan60l=p.pca(dan60l,n_components=9)
-		PCAdan70r=p.pca(dan70r,n_components=9)
-		PCAdan70l=p.pca(dan70l,n_components=9)
-		PCAdan80r=p.pca(dan80r,n_components=9)
-		PCAdan80l=p.pca(dan80l,n_components=9)
-		PCAdan90r=p.pca(dan90r,n_components=9)
-		PCAdan90l=p.pca(dan90l,n_components=9)
-		
-		PCArobert10r=p.pca(robert10r,n_components=9)
-		PCArobert10l=p.pca(robert10l,n_components=9)
-		PCArobert20r=p.pca(robert20r,n_components=9)
-		PCArobert20l=p.pca(robert20l,n_components=9)
-		PCArobert30r=p.pca(robert30r,n_components=9)
-		PCArobert30l=p.pca(robert30l,n_components=9)
-		PCArobert40r=p.pca(robert40r,n_components=9)
-		PCArobert40l=p.pca(robert40l,n_components=9)
-		PCArobert50r=p.pca(robert50r,n_components=9)
-		PCArobert50l=p.pca(robert50l,n_components=9)
-		PCArobert60r=p.pca(robert60r,n_components=9)
-		PCArobert60l=p.pca(robert60l,n_components=9)
-		PCArobert70r=p.pca(robert70r,n_components=9)
-		PCArobert70l=p.pca(robert70l,n_components=9)
-		PCArobert80r=p.pca(robert80r,n_components=9)
-		PCArobert80l=p.pca(robert80l,n_components=9)
-		PCArobert90r=p.pca(robert90r,n_components=9)
-		PCArobert90l=p.pca(robert90l,n_components=9)
-
-		PCAlaura10r=p.pca(laura10r,n_components=9)
-		PCAlaura10l=p.pca(laura10l,n_components=9)
-		PCAlaura20r=p.pca(laura20r,n_components=9)
-		PCAlaura20l=p.pca(laura20l,n_components=9)
-		PCAlaura30r=p.pca(laura30r,n_components=9)
-		PCAlaura30l=p.pca(laura30l,n_components=9)
-		PCAlaura40r=p.pca(laura40r,n_components=9)
-		PCAlaura40l=p.pca(laura40l,n_components=9)
-		PCAlaura50r=p.pca(laura50r,n_components=9)
-		PCAlaura50l=p.pca(laura50l,n_components=9)
-		PCAlaura60r=p.pca(laura60r,n_components=9)
-		PCAlaura60l=p.pca(laura60l,n_components=9)
-		PCAlaura70r=p.pca(laura70r,n_components=9)
-		PCAlaura70l=p.pca(laura70l,n_components=9)
-		PCAlaura80r=p.pca(laura80r,n_components=9)
-		PCAlaura80l=p.pca(laura80l,n_components=9)
-		PCAlaura90r=p.pca(laura90r,n_components=9)
-		PCAlaura90l=p.pca(laura90l,n_components=9)
-
-		self.pca = {'10l':[PCAdan10l,PCArobert10l,PCAlaura10l],'20l':[PCAdan20l,PCArobert20l,PCAlaura20l],'30l':[PCAdan30l,PCArobert30l,PCAlaura30l],'40l':[PCAdan40l,PCArobert40l,PCAlaura40l],'50l':[PCAdan50l,PCArobert50l,PCAlaura50l],'60l':[PCAdan60l,PCArobert60l,PCAlaura60l],'70l':[PCAdan70l,PCArobert70l,PCAlaura70l],'80l':[PCAdan80l,PCArobert80l,PCAlaura80l],'90l':[PCAdan90l,PCArobert90l,PCAlaura90l],
-		            '10r':[PCAdan10r,PCArobert10r,PCAlaura10r],'20r':[PCAdan20r,PCArobert20r,PCAlaura20r],'30r':[PCAdan30r,PCArobert30r,PCAlaura30r],'40r':[PCAdan40r,PCArobert40r,PCAlaura40r],'50r':[PCAdan50r,PCArobert50r,PCAlaura50r],'60r':[PCAdan60r,PCArobert60r,PCAlaura60r],'70r':[PCAdan70r,PCArobert70r,PCAlaura70r],'80r':[PCAdan80r,PCArobert80r,PCAlaura80r],'90r':[PCAdan90r,PCArobert90r,PCAlaura90r]}
-		"""
+		self.accelWithGyroData_pca = {k:[p.pca(a,n_components=6) for a in v] for k,v in self.accelWithGyroData.iteritems()}
+		self.accelWithMagData_pca = {k:[p.pca(a,n_components=6) for a in v] for k,v in self.accelWithMagData.iteritems()}
+		self.gyroWithMagData_pca = {k:[p.pca(a,n_components=6) for a in v] for k,v in self.gyroWithMagData.iteritems()}
 
 		self.pcaDataOnly = {key:[tuple[0] for tuple in value] for key,value in self.pca.iteritems()}
 		self.explainedVariances = {key:[tuple[1] for tuple in value] for key,value in self.pca.iteritems()}
@@ -150,11 +97,56 @@ class db:
 
 		print "Database ready"
 
+	def computeAccelSegments(self):
+		print "Segmenting just accelerometer data..."
+		self.accelSegs = {k:[m.getHighAndLowDimSegments(a, n_components=3, smoothingWindow=300) for a in v] for k,v in self.accelData.iteritems()}
+		self.HDaccelSegments = {k:[HD for (HD,LD,vs) in v] for k,v in self.accelSegs.iteritems()}
+		self.LDaccelSegments = {k:[LD for (HD,LD,vs) in v] for k,v in self.accelSegs.iteritems()}
+
+	def computeGyroSegments(self):
+		print "Segmenting just gyroscope data..."
+		self.gyroSegs = {k:[m.getHighAndLowDimSegments(a, n_components=3, smoothingWindow=300) for a in v] for k,v in self.gyroData.iteritems()}
+		self.HDgyroSegments = {k:[HD for (HD,LD,vs) in v] for k,v in self.gyroSegs.iteritems()}
+		self.LDgyroSegments = {k:[LD for (HD,LD,vs) in v] for k,v in self.gyroSegs.iteritems()}
+
+	def computeMagSegments(self):
+		print "Segmenting just magnetometer data..."
+		self.magSegs = {k:[m.getHighAndLowDimSegments(a, n_components=3, smoothingWindow=300) for a in v] for k,v in self.magData.iteritems()}
+		self.HDmagSegments = {k:[HD for (HD,LD,vs) in v] for k,v in self.magSegs.iteritems()}
+		self.LDmagSegments = {k:[LD for (HD,LD,vs) in v] for k,v in self.magSegs.iteritems()}
+
+	def computeAccelWithGyroSegments(self):
+		print "Segmenting accelerometer with gyroscope data..."
+		self.accelWithGyroSegs = {k:[m.getHighAndLowDimSegments(a, n_components=3, smoothingWindow=300) for a in v] for k,v in self.accelWithGyroData.iteritems()}
+		self.HDaccelWithGyroSegments = {k:[HD for (HD,LD,vs) in v] for k,v in self.accelWithGyroSegs.iteritems()}
+		self.LDaccelWithGyroSegments = {k:[LD for (HD,LD,vs) in v] for k,v in self.accelWithGyroSegs.iteritems()}
+
+	def computeAccelWithMagSegments(self):
+		print "Segmenting accelerometer with magnetometer data..."
+		self.accelWithMagSegs = {k:[m.getHighAndLowDimSegments(a, n_components=3, smoothingWindow=300) for a in v] for k,v in self.accelWithMagData.iteritems()}
+		self.HDaccelWithMagSegments = {k:[HD for (HD,LD,vs) in v] for k,v in self.accelWithMagSegs.iteritems()}
+		self.LDaccelWithMagSegments = {k:[LD for (HD,LD,vs) in v] for k,v in self.accelWithMagSegs.iteritems()}
+
+	def computeGyroWithMagSegments(self):
+		print "Segmenting gyroscope with magnetometer data..."
+		self.gyroWithMagSegs = {k:[m.getHighAndLowDimSegments(a, n_components=3, smoothingWindow=300) for a in v] for k,v in self.gyroWithMagData.iteritems()}
+		self.HDgyroWithMagSegments = {k:[HD for (HD,LD,vs) in v] for k,v in self.gyroWithMagSegs.iteritems()}
+		self.LDgyroWithMagSegments = {k:[LD for (HD,LD,vs) in v] for k,v in self.gyroWithMagSegs.iteritems()}
+
+	def mergeSegments(dictOfSegmentsBySubject):
+		mergedSubjects = {key:value for (key,value) in zip( dictOfSegmentsBySubject.keys(), [sum(subject,[]) for subject in dictOfSegmentsBySubject.values()] ) }
+		mergedLeftAndRightArmExercises = {}
+		for classLabel,motions in mergedSubjects.iteritems():
+			for segment in motions:
+				mergedLeftAndRightArmExercises.setdefault(classLabel[:-1], []).append(segment)
+		return mergedLeftAndRightArmExercises
+
 	def computeSegments(self):
 		print "Segmenting data..."
 		bar = progressbar.ProgressBar(maxval=54, widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
 		bar.start(); progress = 0
 
+		#Each of these returns in the form (HDsegments,LDsegments,explainedVariance)
 		dan10r=m.getHighAndLowDimSegments(self.data['10r'][0], n_components=9, smoothingWindow=150); progress += 1; bar.update(progress)
 		dan10l=m.getHighAndLowDimSegments(self.data['10l'][0], n_components=9, smoothingWindow=150); progress += 1; bar.update(progress)
 		dan20r=m.getHighAndLowDimSegments(self.data['20r'][0], n_components=9, smoothingWindow=150); progress += 1; bar.update(progress)
@@ -276,7 +268,6 @@ class db:
 
 		self.LDsegs={'10l':[dan10l[1],robert10l[1],laura10l[1]],'20l':[dan20l[1],robert20l[1],laura20l[1]],'30l':[dan30l[1],robert30l[1],laura30l[1]],'40l':[dan40l[1],robert40l[1],laura40l[1]],'50l':[dan50l[1],robert50l[1],laura50l[1]],'60l':[dan60l[1],robert60l[1],laura60l[1]],'70l':[dan70l[1],robert70l[1],laura70l[1]],'80l':[dan80l[1],robert80l[1],laura80l[1]],'90l':[dan90l[1],robert90l[1],laura90l[1]],
 		             '10r':[dan10r[1],robert10r[1],laura10r[1]],'20r':[dan20r[1],robert20r[1],laura20r[1]],'30r':[dan30r[1],robert30r[1],laura30r[1]],'40r':[dan40r[1],robert40r[1],laura40r[1]],'50r':[dan50r[1],robert50r[1],laura50r[1]],'60r':[dan60r[1],robert60r[1],laura60r[1]],'70r':[dan70r[1],robert70r[1],laura70r[1]],'80r':[dan80r[1],robert80r[1],laura80r[1]],'90r':[dan90r[1],robert90r[1],laura90r[1]]}
-
 
 		# storing high and low dim segments under each key (only for Laura I at the moment)
 		self.segs = {'10l':[laura10l[0][1:-1],laura10l[1][1:-1]],'20l':[laura20l[0][1:-1],laura20l[1][1:-1]],'30l':[laura30l[0][1:-1],laura30l[1][1:-1]],'40l':[laura40l[0][1:-1],laura40l[1][1:-1]],'50l':[laura50l[0][1:-1],laura50l[1][1:-1]],'60l':[laura60l[0][1:-1],laura60l[1][1:-1]],'70l':[laura70l[0][1:-1],laura70l[1][1:-1]],'80l':[laura80l[0][1:-1],laura80l[1][1:-1]],'90l':[laura90l[0][1:7]+laura90l[0][9:-1],laura90l[1][1:7]+laura90l[1][9:-1]],
