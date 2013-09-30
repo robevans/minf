@@ -23,7 +23,7 @@ def manuallySegment(inputFile, listOfSegmentationPoints, outputFilesPrefix):
 		np.savetxt("%s%i%s"%(outputFilesPrefix,i,"RAW.txt"),seg, delimiter=",")
 		np.savetxt("%s%i%s"%(outputFilesPrefix,i,"PCA.txt"),pcaSeg, delimiter=",")
 
-def segmentAndPlot(X, xIsFilename=False, smoothingWindow=100, smoothing='blackman', title='Automatic Segmentation'):
+def segmentAndPlot(X, xIsFilename=False, smoothingWindow=100, smoothing='blackman', title='Automatic Segmentation', save=False):
 	if xIsFilename == True:
 		with open(X,'r') as fin:
 			X = np.loadtxt(fin,delimiter=",")
@@ -41,16 +41,18 @@ def segmentAndPlot(X, xIsFilename=False, smoothingWindow=100, smoothing='blackma
 	pl.title(title)
 	#pl.legend((''))
 
-	pl.show()
-	#pl.savefig('/Users/robertevans/Desktop/pcaSegArmEx90r.pdf', format='pdf')
+	if save:
+		pl.savefig(('/Users/robertevans/Desktop/Accelerometer Segments/'+title+'.pdf'), format='pdf')
+	else:
+		pl.show()
 
-def segmentAndSave(X, segmentationPoints="useX", xIsFilename=False, segmentBy="maxs",trimFrom=None,trimTo=float('inf'),filePrefix="./segments/V",fileSuffix=".csv"):
+def segmentAndSave(X, useData="useX", xIsFilename=False, segmentBy="maxs",trimFrom=None,trimTo=float('inf'),filePrefix="./segments/V",fileSuffix=".csv",smoothingWindow=100):
 	if xIsFilename == True:
 		with open(X,'r') as fin:
 			X = np.loadtxt(fin,delimiter=",")
 
-	if segmentationPoints == "useX":
-		(mins,maxs) = segmentationPoints(X)
+	if useData == "useX":
+		(mins,maxs) = segmentationPoints(X, windowSize=smoothingWindow)
 		if segmentBy == "maxs":
 			segPoints=[m for m in maxs if m>=trimFrom and m<=trimTo]
 		if segmentBy == "mins":
