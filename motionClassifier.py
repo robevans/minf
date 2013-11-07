@@ -2,7 +2,6 @@ __author__ = 'Robert Evans'
 import armExercisesDatabase
 import progressbar
 import master as m
-import itertools
 import dtw
 import random
 
@@ -25,7 +24,21 @@ class KNNclassifier:
 
 		sl = sorted(l,key=lambda x:x[1]) # Sort neighbours by distance
 		L = sl[:self.k] # Take the nearest k neighbours
-		return max(itertools.groupby(sorted(L)), key=lambda(x, v):(len(list(v)),-L.index(x)))[0] # Chose the most common, using the index as a tie breaker
+		
+		# Count the number of instances of each class among the k nearest neighbours
+		classCountsWithSums = {}
+		for (cl,dist) in L:
+			if cl not in classCountsWithSums:
+				classCountsWithSums[cl] = (1,dist,cl)
+			else:
+				classCountsWithSums[cl] = (classCountsWithSums[cl][0] + 1, classCountsWithSums[cl][1] + dist, cl)
+
+		sizeOfLargestGroup = max([c for (c,_,_) in classCountsWithSums.values()]) # There may be a tie
+
+		# Break any tie by using the group which is closer on average
+		largestGroupWithSmallestDistance = min( [(d,cl) for (c,d,cl) in classCountsWithSums.values() if c == sizeOfLargestGroup] )
+
+		return largestGroupWithSmallestDistance[1] # Return the name of the most common neighbour
 
 def testKNNClassifier(dataClass, classifierClass, split=0.5, k=3, HDorLD='HD'):
 	db = dataClass(split)
@@ -43,10 +56,10 @@ def testKNNClassifier(dataClass, classifierClass, split=0.5, k=3, HDorLD='HD'):
 						print k,classification
 						progress += 1
 						bar.update(progress)
-						if k == classification[0]:
+						if k == classification:
 							correct+=1
 		bar.finish()
-		print float(correct)/sum(map(len,cl.data.HDtest.values()))*100,"% correct"
+		print "%.1f%% correct"%(float(correct)/sum(map(len,cl.data.HDtest.values()))*100)
 
 	if HDorLD == 'LD':
 		bar = progressbar.ProgressBar(maxval=sum(map(len,cl.data.LDtest.values())), widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
@@ -59,10 +72,10 @@ def testKNNClassifier(dataClass, classifierClass, split=0.5, k=3, HDorLD='HD'):
 						print k,classification
 						progress += 1
 						bar.update(progress)
-						if k == classification[0]:
+						if k == classification:
 							correct+=1
 		bar.finish()
-		print float(correct)/sum(map(len,cl.data.LDtest.values()))*100,"% correct"
+		print "%.1f%% correct"%(float(correct)/sum(map(len,cl.data.LDtest.values()))*100)
 
 class armExercisesData:
 	def __init__(self, split=0.5):
@@ -223,6 +236,50 @@ class circlesData:
 							'Clockwise radius=15cm':self.LDsegs15c[(int(len(self.LDsegs15c)*split)):],
 							'Clockwise radius=20cm':self.LDsegs20c[(int(len(self.LDsegs20c)*split)):],
 							'Clockwise radius=25cm':self.LDsegs25c[(int(len(self.LDsegs25c)*split)):]}
+
+		progress += 1; bar.update(progress)
+		bar.finish()
+
+class armCirclesData:
+	def __init__(self, split=0.5, pca_dims=3):
+		print "Initialising reference data..."
+		bar = progressbar.ProgressBar(maxval=7, widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+		bar.start(); progress = 0
+
+		self.__data_V0=m.readCSVfile("captures/VerticalArmSpin-Dan.csv")
+		self.__data_V1=m.readCSVfile("captures/VerticalArmSpin-Jibran.csv")
+		self.__data_H0=m.readCSVfile("captures/HorizontalArmSpin-Dan.csv")
+		self.__data_H1=m.readCSVfile("captures/HorizontalArmSpin-Jibran.csv")
+		self.__data_H2=m.readCSVfile("captures/HorizontalArmSpinLittleCircles-Jibran.csv")
+		progress += 1; bar.update(progress)
+
+		(self.__HDsegs_V0,self.__LDsegs_V0,_) = m.getHighAndLowDimSegments(self.__data_V0, n_components=pca_dims, smoothingWindow=15); progress += 1; bar.update(progress)
+		(self.__HDsegs_V1,self.__LDsegs_V1,_) = m.getHighAndLowDimSegments(self.__data_V1, n_components=pca_dims, smoothingWindow=25); progress += 1; bar.update(progress)
+		(self.__HDsegs_H0,self.__LDsegs_H0,_) = m.getHighAndLowDimSegments(self.__data_H0, n_components=pca_dims, smoothingWindow=20); progress += 1; bar.update(progress)
+		(self.__HDsegs_H1,self.__LDsegs_H1,_) = m.getHighAndLowDimSegments(self.__data_H1, n_components=pca_dims, smoothingWindow=20); progress += 1; bar.update(progress)
+		(self.__HDsegs_H2,self.__LDsegs_H2,_) = m.getHighAndLowDimSegments(self.__data_H2, n_components=pca_dims, smoothingWindow=15); progress += 1; bar.update(progress)
+
+		self.HDtraining = {'VerticalArmSpin - Dan':self.__HDsegs_V0[:(int(len(self.__HDsegs_V0)*split))],
+							'VerticalArmSpin - Jibran':self.__HDsegs_V1[:(int(len(self.__HDsegs_V1)*split))],
+							'HorizontalArmSpin - Dan':self.__HDsegs_H0[:(int(len(self.__HDsegs_H0)*split))],
+							'HorizontalArmSpin - Jibran':self.__HDsegs_H1[:(int(len(self.__HDsegs_H1)*split))],
+							'HorizontalArmSpin - Small - Jibran':self.__HDsegs_H2[:(int(len(self.__HDsegs_H2)*split))]}
+		self.LDtraining = {'VerticalArmSpin - Dan':self.__LDsegs_V0[:(int(len(self.__LDsegs_V0)*split))],
+							'VerticalArmSpin - Jibran':self.__LDsegs_V1[:(int(len(self.__LDsegs_V1)*split))],
+							'HorizontalArmSpin - Dan':self.__LDsegs_H0[:(int(len(self.__LDsegs_H0)*split))],
+							'HorizontalArmSpin - Jibran':self.__LDsegs_H1[:(int(len(self.__LDsegs_H1)*split))],
+							'HorizontalArmSpin - Small - Jibran':self.__LDsegs_H2[:(int(len(self.__LDsegs_H2)*split))]}
+
+		self.HDtest = {'VerticalArmSpin - Dan':self.__HDsegs_V0[(int(len(self.__HDsegs_V0)*split)):],
+							'VerticalArmSpin - Jibran':self.__HDsegs_V1[(int(len(self.__HDsegs_V1)*split)):],
+							'HorizontalArmSpin - Dan':self.__HDsegs_H0[(int(len(self.__HDsegs_H0)*split)):],
+							'HorizontalArmSpin - Jibran':self.__HDsegs_H1[(int(len(self.__HDsegs_H1)*split)):],
+							'HorizontalArmSpin - Small - Jibran':self.__HDsegs_H2[(int(len(self.__HDsegs_H2)*split)):]}
+		self.LDtest = {'VerticalArmSpin - Dan':self.__LDsegs_V0[(int(len(self.__LDsegs_V0)*split)):],
+							'VerticalArmSpin - Jibran':self.__LDsegs_V1[(int(len(self.__LDsegs_V1)*split)):],
+							'HorizontalArmSpin - Dan':self.__LDsegs_H0[(int(len(self.__LDsegs_H0)*split)):],
+							'HorizontalArmSpin - Jibran':self.__LDsegs_H1[(int(len(self.__LDsegs_H1)*split)):],
+							'HorizontalArmSpin - Small - Jibran':self.__LDsegs_H2[(int(len(self.__LDsegs_H2)*split)):]}
 
 		progress += 1; bar.update(progress)
 		bar.finish()

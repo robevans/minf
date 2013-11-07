@@ -244,9 +244,9 @@ def allMotionslowDimRawSimilarity(n_components=3,savePlot=False,title="Similarit
 	namesH3 = ["H3"]*len(raw_h3)
 	names = namesV1+namesV2+namesH1+namesH2+namesH3
 	# Calculate average weights
-	averageWeights = [(a+b+c+d+e)/5.0 for (a,b,c,d,e) in zip(weights_v1,weights_v2,weights_h1,weights_h2,weights_h3)]
+	#averageWeights = [(a+b+c+d+e)/5.0 for (a,b,c,d,e) in zip(weights_v1,weights_v2,weights_h1,weights_h2,weights_h3)]
 	# Crunch similarity matrix
-	m.similarityMatrix(raw_v1+raw_v2+raw_h1+raw_h2+raw_h3,names,averageWeights,title,savePlot)
+	m.similarityMatrix(raw_v1+raw_v2+raw_h1+raw_h2+raw_h3,names,title,savePlot)
 
 def plotPCA3d(filename):
 	(lowDims,v)=pca.pcaFromFile(filename,n_components=2)

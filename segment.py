@@ -46,6 +46,39 @@ def segmentAndPlot(X, xIsFilename=False, smoothingWindow=100, smoothing='blackma
 	else:
 		pl.show()
 
+def plotSegPoints(data, segPoints, xs=None):
+	pl.figure(figsize=(11,9))
+	if xs==None:
+		pl.plot(data)
+	else:
+		pl.plot(xs,data)
+	for sp in segPoints:
+		pl.axvline(sp,color='black',linewidth=2)
+	"""
+	pl.title("Automatic Gait Segmentation")
+	pl.xlabel("Time (Seconds)")
+	pl.ylabel("Rotation (Degrees per second)")
+	"""
+	pl.show()
+
+def yCrossingSegPoints(data, yThresh=0, xBetweenSegs=1, yBetweenSegs=1):
+	prev = data[0]
+	segPoints = []
+	canSegment = True
+	candidate = None
+	for i,d in enumerate(data):
+		if len(segPoints) > 0 and abs(d-data[segPoints[-1]]) >= yBetweenSegs/2.0:
+			canSegment = True
+			if candidate and abs(candidate[0]-segPoints[-1]) >= xBetweenSegs:
+				pass;#segPoints += candidate
+		if np.signbit(prev-yThresh) != np.signbit(d-yThresh):
+			candidate = [i]
+			if canSegment and (len(segPoints) == 0 or abs(candidate[0]-segPoints[-1]) >= xBetweenSegs):
+				segPoints += candidate
+				canSegment = False
+		prev = d
+	return segPoints
+
 def segmentAndSave(X, useData="useX", xIsFilename=False, segmentBy="maxs",trimFrom=None,trimTo=float('inf'),filePrefix="./segments/V",fileSuffix=".csv",smoothingWindow=100):
 	if xIsFilename == True:
 		with open(X,'r') as fin:

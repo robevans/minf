@@ -132,3 +132,4 @@ def readRaw(input_filename):
 		l= map(float,filter(lambda x: x!='' ,l.translate(None,',ary()[]/n')[:-1].split(' ')))
 		data.append(l)
 	return numpy.array(data)
+	
