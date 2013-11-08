@@ -91,7 +91,8 @@ class gyroWalkingData:
 		figure(figsize=(11,9))
 		plot(rawData[:,0],rawData[:,2:])
 		for s in segPoints:
-			axvline(rawData[:,0][s],color='black',linewidth=2)
+			if s <= len(rawData):
+				axvline(rawData[:,0][s],color='black',linewidth=2)
 		title("Neural Network Based Gait Segmentation")
 		xlabel("Time (Seconds)")
 		ylabel("Rotation (Degrees per second)")

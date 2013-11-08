@@ -28,12 +28,12 @@ class KeyholeSurgerySimulatorData:
 			resp=pd.read_table(filepath, dialect=dialect)
 		return resp
 
-	def plotAgainstActvity(self, dataList=None):
+	def plotAgainstActivity(self, dataList=None):
 		dataList = self.data if dataList == None else dataList
 		for i in range(len(dataList)):
 			plt.figure(1)
 			ax = plt.subplot(211)
-			plt.plot(dataList[i][['accelX','accelY','accelZ']])
+			plt.plot(dataList[i]['timestamp'], dataList[i][['accelX','accelY','accelZ']])
 			plt.subplot(212, sharex=ax)
-			plt.plot(dataList[i]['activity'])
+			plt.plot(dataList[i]['timestamp'], dataList[i]['activity'])
 			plt.show()
