@@ -8,15 +8,16 @@ from scipy.cluster.hierarchy import fclusterdata
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import numpy as np
+from smooth import smooth
 
-def classificationDataSet(subjects=['a2','b','c1','c2'], segClass=0, db=None, seg_width=2, usePCA=True, n_components=2, isTrainingData=False):
+def classificationDataSet(subjects=['a2','b','c1','c2'], segClass=0, db=None, seg_width=10, usePCA=True, n_components=5, isTrainingData=False):
 	if not db:
 		db = gyroWalkingData()
 
 	if usePCA:
-		DS = ClassificationDataSet(n_components*5, nb_classes=2)
+		DS = ClassificationDataSet(n_components*3, nb_classes=2)
 	else:
-		DS = ClassificationDataSet(21*5, nb_classes=2)
+		DS = ClassificationDataSet(21*3, nb_classes=2)
 	
 	for subject in subjects:
 		# Initialise data
@@ -33,8 +34,9 @@ def classificationDataSet(subjects=['a2','b','c1','c2'], segClass=0, db=None, se
 			segs = db.segments[subject]
 
 		# Add data
-		for i in range(0,len(raw),seg_width):
+		for i in range(0,len(raw)):
 
+			"""
 			# Look for segments in window, including those of other classes
 			hasSeg = 0
 			hasOtherSeg = False
@@ -50,18 +52,42 @@ def classificationDataSet(subjects=['a2','b','c1','c2'], segClass=0, db=None, se
 			# Add segments to classifier, duplicating rare classes if it is training data
 			for j in range(seg_width):
 				if i+j < len(raw):
-					DS.appendLinked( np.concatenate( [raw[max(0,i+j-seg_width)], raw[i+j],gradients[i+j], raw[min(len(raw)-1,i+j-seg_width)], standardDeviations[i+j]] ), [hasSeg] )
+					DS.appendLinked( np.concatenate( [raw[i+j],gradients[i+j],standardDeviations[i+j]] ), [hasSeg] )
 					if isTrainingData and (hasSeg or hasOtherSeg):
-						for i in range(10):
-							DS.appendLinked( np.concatenate( [raw[max(0,i+j-seg_width)], raw[i+j],gradients[i+j], raw[min(len(raw)-1,i+j-seg_width)], standardDeviations[i+j]] ), [hasSeg] )
+						for i in range(0):
+							DS.appendLinked( np.concatenate( [raw[i+j],gradients[i+j],standardDeviations[i+j]] ), [hasSeg] )
+			"""
+
+			hasSeg = 0
+			if i in segs:
+				hasSeg = 1
+			DS.appendLinked( np.concatenate( [raw[i],gradients[i],standardDeviations[i]] ), [hasSeg] )
 	
 	DS._convertToOneOfMany()
+	if isTrainingData:
+		DS = balanceClassRatios(DS)
 	return DS
 
-def summaryStatistics(data, std_window=5):
+def balanceClassRatios(dataset):
+	dataset._convertToClassNb()
+	dataset.calculateStatistics()
+
+	numberOfMostAbundantClass = max(dataset.classHist.values())
+	replicationFactors = {k:numberOfMostAbundantClass/float(v) for k,v in dataset.classHist.items()}
+	separatedClasses =  {k:[t for t in dataset if t[1] == k] for k,v in replicationFactors.items() if int(v) != 1}
+
+	for k,v in separatedClasses.items():
+		for replica in range( int(replicationFactors[k]) ):
+			for sample,_class in v:
+				dataset.appendLinked(sample,_class)
+	dataset._convertToOneOfMany()
+	return dataset
+
+
+def summaryStatistics(data, std_window=10):
 	gradients = []
 	for col in range(np.shape(data)[1]):
-		gradients.append(np.gradient(data[:,col]))
+		gradients.append(np.gradient(smooth(data[:,col])))
 	gradients = np.column_stack(gradients)
 
 	standardDeviations = []
@@ -76,8 +102,8 @@ def summaryStatistics(data, std_window=5):
 
 def networkAndTrainer(db, subjects=['a2','b','c1','c2'], segClass=0, windowSize=10):
 	trainingData = classificationDataSet(subjects=subjects, segClass=segClass, db=db, seg_width=windowSize, isTrainingData=True)
-	net = buildNetwork( trainingData.indim, 30, 30, trainingData.outdim, outclass=SoftmaxLayer, fast=True)
-	trainer = BackpropTrainer( net, dataset=trainingData, momentum=0.1, verbose=True, weightdecay=0.01)
+	net = buildNetwork( trainingData.indim, 10, 10, trainingData.outdim, outclass=SoftmaxLayer, fast=True)
+	trainer = BackpropTrainer( net, dataset=trainingData, momentum=0.3, verbose=True, weightdecay=0.03)
 	return (net, trainer)
 
 def train(trainer, epochs=10):
@@ -121,7 +147,7 @@ def mostLikelySegsInClusters(segs, clusters, likelihoods):
 			mostLikely[c] = (s,l)
 	return [s for s,l in mostLikely.values()]
 
-def demo(subject='a1', segClass=0, plot_stages=True, saveGraph=False, n_most_likely=50, windowSize=10, clusterThresh=20):
+def demo(subject='a1', segClass=0, plot_stages=True, saveGraph=False, n_most_likely=50, windowSize=5, clusterThresh=20):
 	db = gyroWalkingData()
 	print "Building neural network"
 	net,trainer=networkAndTrainer(db, segClass=segClass, subjects=list( set(db.segments) - set([subject])), windowSize=windowSize)
