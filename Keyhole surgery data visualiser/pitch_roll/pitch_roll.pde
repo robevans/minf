@@ -1,5 +1,8 @@
 import processing.opengl.*;
 
+int dataNum = 0;
+int drawRate = 81;
+
 JSONArray L_pitches;
 JSONArray L_rolls;
 JSONArray R_pitches;
@@ -17,9 +20,6 @@ int L_index = 0;
 int R_index = 0;
 
 int startTimer;
-int drawRate = 60;
-
-int dataNum = 0;
  
 void setup(){
 size(1500, 800, OPENGL);
@@ -46,6 +46,7 @@ void draw(){
     L_pitch = radians(L_pitches.getFloat(L_index));
     L_roll = radians(L_rolls.getFloat(L_index));
     translate(0, 60, 0);
+    stroke(0,255,0);
     box(10,600,10);
     popMatrix();
     
@@ -65,7 +66,6 @@ void draw(){
     L_endOfNeedle = rotatePointAboutYAxis(L_endOfNeedle, L_roll);
     L_endOfNeedle[0] += width/2;
     L_endOfNeedle[1] += height/2;
-    //camera(L_endOfNeedle[0], L_endOfNeedle[1]-300, L_endOfNeedle[2] + 1000.0, L_endOfNeedle[0], L_endOfNeedle[1]-300, L_endOfNeedle[2], 0, 1, 0);
     L_trail[L_index] = L_endOfNeedle;
     
     float[] R_endOfNeedle = {0.0, 360.0, 0.0};
@@ -81,15 +81,15 @@ void draw(){
     }
     
     for (int i=0; i<=R_index; i++) {
-      stroke(0,255,0);
+      stroke(255,0,0);
       point(R_trail[i][0], R_trail[i][1], R_trail[i][2]);
     }
     
     if (L_index < L_pitches.size()-1) {
-      L_index = (L_index + 1);// % L_pitches.size();
+      L_index = (L_index + 1);
     }
     if (R_index < R_pitches.size()-1) {
-      R_index = (R_index + 1);// % R_pitches.size();
+      R_index = (R_index + 1);
     }
     startTimer = millis();
   }

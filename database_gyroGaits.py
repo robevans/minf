@@ -112,7 +112,7 @@ class gyroWalkingData:
 			rawData = rawData[:,[0,1,14,15,16,17,18,19,20,21,22]]
 			key = key[12:]
 		ColourSeqOriginal = matplotlib.rcParams['axes.color_cycle']
-		matplotlib.rcParams['axes.color_cycle'] = cm.spectral( np.linspace( 0, 1, np.shape(rawData)[1] ) ).tolist()
+		matplotlib.rcParams['axes.color_cycle'] = cm.winter( np.linspace( 0, 1, np.shape(rawData)[1] ) ).tolist()
 		plot(rawData[segment[0]:segment[1],0],rawData[segment[0]:segment[1],2:])
 		title("Gait Segment")
 		xlabel("Time (Seconds)")

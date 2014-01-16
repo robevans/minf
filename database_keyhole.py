@@ -160,7 +160,7 @@ class ActivityMetrics:
 		#pd.rolling_sum(self.averageVariances(data,window_size),50).cumsum()	\
 		]
 
-		self.plotStack(data, metrics, title='Average sum of diffs; Average sum of squared differences; Average variance')
+		self.plotStack(data, metrics, title='Raw accelerometer data; Sum of differences; Sum of squared differences; Variance')
 
 	def plotLRwithMetrics(self, dataIndex=1):
 		l,r = self.db.split_data[dataIndex]['L'],self.db.split_data[dataIndex]['R']
@@ -212,15 +212,12 @@ class OrientationCalculator:
 			plt.plot(pitch)
 			plt.plot(roll)
 			plt.legend(["Pitch","Roll"])
+			plt.title("Pitch and roll of the accelerometer")
+			plt.xlabel("Time")
+			plt.ylabel("Degrees")
 			plt.show()
 
 		return pd.DataFrame({'pitch':pitch, 'roll':roll} )
-
-	def JSONPitchAndRoll(self, dataframe, pitch_axis, roll_axis):
-		pitch_roll = self.pitchAndRoll(dataframe, pitch_axis=pitch_axis, roll_axis=roll_axis, plot=False)
-		json_pitch = json.JSONEncoder().encode(pitch_roll['pitch'].tolist())
-		json_roll = json.JSONEncoder().encode(pitch_roll['roll'].tolist())
-		return (json_pitch, json_roll)
 
 	def coneBase(self, dataframe, pitch_axis, roll_axis, plot=False):
 		pitch_roll = self.pitchAndRoll(dataframe, pitch_axis=pitch_axis, roll_axis=roll_axis, plot=False)
@@ -291,7 +288,11 @@ class OrientationCalculator:
 				R[row] += rotationMatrix[row][i] * point[i]
 		return R
 
-
+	def JSONPitchAndRoll(self, dataframe, pitch_axis, roll_axis):
+		pitch_roll = self.pitchAndRoll(dataframe, pitch_axis=pitch_axis, roll_axis=roll_axis, plot=False)
+		json_pitch = json.JSONEncoder().encode(pitch_roll['pitch'].tolist())
+		json_roll = json.JSONEncoder().encode(pitch_roll['roll'].tolist())
+		return (json_pitch, json_roll)
 
 	def dumpDataForProcessingScript(self, destinationFolder="/Users/robertevans/repos/minf/Keyhole surgery data visualiser/pitch_roll/data"):
 		for i,data in enumerate(self.db.split_data):
