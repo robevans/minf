@@ -179,12 +179,6 @@ class gyroWalkingData:
 
 
 class PCAclusteringSegmenter:
-	def __init__(self, db=None):
-		if not db:
-			self.db = gyroWalkingData()
-		else:
-			self.db = db
-
 	def findSegments(self, rawData, minSegSize=20):
 		PCs = pca(rawData, n_components=2)[0]
 		minSegs = argrelmin(PCs[:,0],order=minSegSize)[0]
