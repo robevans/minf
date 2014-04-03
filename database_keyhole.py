@@ -10,10 +10,17 @@ from mpl_toolkits.mplot3d import Axes3D
 from sklearn.decomposition import PCA
 import gaussianFitter
 import os
+import matplotlib
+
+font = {'family' : 'normal',
+        'weight' : 'bold',
+        'size'   : 16}
+
+matplotlib.rc('font', **font)
 
 class KeyholeSurgerySimulatorData:
 	# Sample rate of data is 12.5Hz
-	def __init__(self, sourceDir="/Users/robertevans/repos/minf/captures/keyhole"):
+	def __init__(self, sourceDir="/Users/robertevans/repos/minf/captures/keyhole/Respeck"):
 		R1_Anne = self.parse(sourceDir+'/RESpeck_1_Anne_20130708155603.csv')
 		R1_Ben = self.parse(sourceDir+'/RESpeck_1_Ben_20130708151903.csv')
 		R1_Jamie = self.parse(sourceDir+'/RESpeck_1_Jamie_20130708153533.csv')
@@ -130,28 +137,30 @@ class ActivityMetrics:
 		plt.figure()
 		plt.suptitle(title)
 		data_axes = plt.subplot(len(metrics)+1,1,1)
+		plt.ylabel("Acceleration (G)")
 		data.plot(x=['timestamp'], y=data.columns - ['timestamp'], ax=data_axes)
 
 		for i,metric in enumerate(metrics):
 			ax = plt.subplot(len(metrics)+1,1,i+2, sharex=data_axes)
+			plt.ylabel("Mean variance")
 			if isinstance(metric, pd.Series):
 				pd.concat([data['timestamp'],metric],axis=1).plot(x=[0],y=[1], ax=ax)
 			if isinstance(metric, pd.DataFrame):
 				metric['timestamp']=data['timestamp']
 				metric.plot(x=['timestamp'], y=metric.columns-['timestamp'])
 
-		plt.xlabel('Time')
+		plt.xlabel('Time of capture')
 		plt.tight_layout(h_pad=-5.2)
 		plt.show()
 
 	def plotComparisonOfMetrics(self, data, window_size=10):
 		metrics = [ 												\
 		#self.sumsOfDifferences(data, window_size),					\
-		self.averageSumOfDifferences(data, window_size),			\
+		#self.averageSumOfDifferences(data, window_size),			\
 		##self.averageSumOfDifferences(data, window_size).cumsum(),			\
 		#pd.rolling_sum(self.averageSumOfDifferences(data, window_size),50).cumsum(),			\
 		#self.sumsOfSquaredDifferences(data, window_size),			\
-		self.averageSumOfSquaredDifferences(data, window_size),		\
+		#self.averageSumOfSquaredDifferences(data, window_size),		\
 		##self.averageSumOfSquaredDifferences(data, window_size).cumsum(),		\
 		#pd.rolling_sum(self.averageSumOfSquaredDifferences(data, window_size),50).cumsum(),		\
 		#self.averageMeans(data, window_size),						\
@@ -160,7 +169,7 @@ class ActivityMetrics:
 		#pd.rolling_sum(self.averageVariances(data,window_size),50).cumsum()	\
 		]
 
-		self.plotStack(data, metrics, title='Raw accelerometer data; Sum of differences; Sum of squared differences; Variance')
+		self.plotStack(data, metrics, title='Data and Smoothness of Simulated Laparoscopy Task')
 
 	def plotLRwithMetrics(self, dataIndex=1):
 		l,r = self.db.split_data[dataIndex]['L'],self.db.split_data[dataIndex]['R']
@@ -209,11 +218,11 @@ class OrientationCalculator:
 
 		if plot:
 			plt.figure()
-			plt.plot(pitch)
-			plt.plot(roll)
-			plt.legend(["Pitch","Roll"])
-			plt.title("Pitch and roll of the accelerometer")
-			plt.xlabel("Time")
+			plt.plot(np.arange(0,len(pitch)/12.5,1/12.5)[:len(pitch)], pitch)
+			plt.plot(np.arange(0,len(roll)/12.5,1/12.5)[:len(roll)], roll)
+			plt.legend(["Pitch","Roll"], loc=0)
+			plt.title("Instrument Pitch and Roll from One Trial")
+			plt.xlabel("Time (seconds)")
 			plt.ylabel("Degrees")
 			plt.show()
 
