@@ -7,15 +7,17 @@ import json
 import matplotlib
 import matplotlib.pyplot as plt
 from scipy.signal import resample
-from scipy.stats import pearsonr, f_oneway
+from scipy.stats import spearmanr, mannwhitneyu
+from scipy.stats.mstats import kruskalwallis
 from sklearn import svm, cross_validation
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, Ridge
+from random import shuffle
 
 # nodeID 2 == Left, nodeID 3 == right.
 
 font = {'family' : 'normal',
-        'weight' : 'bold',
-        'size'   : 16}
+		'weight' : 'bold',
+		'size'   : 16}
 
 matplotlib.rc('font', **font)
 
@@ -23,6 +25,21 @@ class KeyholeSimPerformance:
 	def __init__(self, KeyholeSimDataInstance):
 			self.db = KeyholeSimDataInstance
 			self.vision_correspondence = [self.db.intermediate[9],self.db.intermediate[5],self.db.intermediate[7],self.db.novice[6],self.db.novice[5],self.db.expert[5],self.db.expert[4],self.db.expert[7],self.db.expert[8],self.db.expert[2],self.db.expert[1],self.db.novice[0],self.db.intermediate[2],self.db.intermediate[4],self.db.novice[1],self.db.intermediate[8],self.db.novice[3],self.db.intermediate[3],self.db.expert[6],self.db.intermediate[0],self.db.intermediate[1],self.db.intermediate[6],self.db.expert[3],self.db.novice[4],self.db.expert[0],self.db.novice[2]]
+			self.perfsCalculated = False
+
+	def calculatePerformances(self):
+		self.novicePerfs = []
+		self.intermediatePerfs = []
+		self.expertPerfs = []
+
+		for n in self.db.novice:
+			self.novicePerfs.append( self.performance( n ) )
+		for i in self.db.intermediate:
+			self.intermediatePerfs.append( self.performance( i ) )
+		for e in self.db.expert:
+			self.expertPerfs.append( self.performance( e ) )
+			
+		self.perfsCalculated = True
 
 	def performance(self, LR_data):
 		L_duration = (LR_data[0]['currentTime'][LR_data[0].index[-1]] - LR_data[0]['currentTime'][LR_data[0].index[0]]).total_seconds()
@@ -44,8 +61,8 @@ class KeyholeSimPerformance:
 		averageSpeed = distance / duration
 		averageAccel = averageSpeed / duration
 
-		L_motionSmoothness = np.sqrt( (L_duration**5/2*L_distance**2) * sum(np.abs(L_diff),2)**2 )
-		R_motionSmoothness = np.sqrt( (R_duration**5/2*R_distance**2) * sum(np.abs(R_diff),2)**2 )
+		L_motionSmoothness = np.sqrt( (L_duration**5/(2*L_distance**2)) * sum( np.diff(L_diff,2)**2 , 2) )
+		R_motionSmoothness = np.sqrt( (R_duration**5/(2*R_distance**2)) * sum( np.diff(R_diff,2)**2 , 2) )
 		motionSmoothness = (L_motionSmoothness + R_motionSmoothness) / 2
 
 		return {'duration':duration, 'angularDist':distance, 'ambidextricity':ambidextricity, 'speedVariance':speedVariance, 'averageSpeed':averageSpeed, 'averageAccel':averageAccel, 'motionSmoothness':motionSmoothness, 'handedness':handedness, 'perf':((1/duration) * (1/distance))};
@@ -55,7 +72,7 @@ class KeyholeSimPerformance:
 			L_angleDistances = resample(L_angleDistances,len(R_angleDistances))
 		if len(R_angleDistances) > len(L_angleDistances):
 			R_angleDistances = resample(R_angleDistances,len(L_angleDistances))
-		return pearsonr(L_angleDistances, R_angleDistances)
+		return spearmanr(L_angleDistances, R_angleDistances)
 
 	def handedness(self, L_angleDistances, R_angleDistances):
 		if len(L_angleDistances) > len(R_angleDistances):
@@ -64,17 +81,23 @@ class KeyholeSimPerformance:
 			R_angleDistances = resample(R_angleDistances,len(L_angleDistances))
 		return np.mean( np.array(R_angleDistances) - np.array(L_angleDistances) ) * 100
 
-	def performancesForThreadingTask(self):
-		self.novicePerfs = []
-		self.intermediatePerfs = []
-		self.expertPerfs = []
+	def outputPerformances(self):
+		print "Name\tExperience\tTask Duration\tAngular Distance\tAverage Speed\tAverage Acceleration\tMotion Smoothness\tHandedness\tSpeed Variance\tAmbidexterity"
+		for s,n in zip(self.db.novice, self.db.key_novice):
+			p = self.performance(s)
+			print "{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}".format(n,'novice',p['duration'],p['angularDist'],p['averageSpeed'],p['averageAccel'],p['motionSmoothness'],p['handedness'],p['speedVariance'],p['ambidextricity'][0])
 
-		for n in self.db.novice:
-			self.novicePerfs.append( self.performance( n ) )
-		for i in self.db.intermediate:
-			self.intermediatePerfs.append( self.performance( i ) )
-		for e in self.db.expert:
-			self.expertPerfs.append( self.performance( e ) )
+		for s,n in zip(self.db.intermediate, self.db.key_intermediate):
+			p = self.performance(s)
+			print "{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}".format(n,'intermediate',p['duration'],p['angularDist'],p['averageSpeed'],p['averageAccel'],p['motionSmoothness'],p['handedness'],p['speedVariance'],p['ambidextricity'][0])
+
+		for s,n in zip(self.db.expert, self.db.key_expert):
+			p = self.performance(s)
+			print "{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}".format(n,'expert',p['duration'],p['angularDist'],p['averageSpeed'],p['averageAccel'],p['motionSmoothness'],p['handedness'],p['speedVariance'],p['ambidextricity'][0])
+
+	def performancesForThreadingTask(self):
+		if not self.perfsCalculated:
+			self.calculatePerformances()
 
 		durations = []
 		angularDists = []
@@ -101,263 +124,92 @@ class KeyholeSimPerformance:
 		ticks = ['N'+str(i) for i in range(1,11)]+['I'+str(i) for i in range(1,11)]+['E'+str(i) for i in range(1,11)]
 		colours = ['r']*10 + ['g']*10 + ['b']*10
 
-		# ONE WAY ANOVAS
-		anova_durations = f_oneway(durations[0:10],durations[10:20],durations[20:30])
-		anova_distances = f_oneway(angularDists[0:10],angularDists[10:20],angularDists[20:30])
-		anova_speeds = f_oneway(speeds[0:10],speeds[10:20],speeds[20:30])
-		anova_accels = f_oneway(averageAccels[0:10],averageAccels[10:20],averageAccels[20:30])
-		anova_smoothness = f_oneway(smoothnesses[1:9],smoothnesses[10:20],smoothnesses[20:30])
-		anova_handedness = f_oneway(handednesses[0:10],handednesses[10:20],handednesses[20:30])
-		anova_variances = f_oneway(speedVariances[0:10],speedVariances[10:20],speedVariances[20:30])
-		anova_ambidexterities = f_oneway(ambidexterities[0:10],ambidexterities[10:20],ambidexterities[20:30])
-		anova_perfs = f_oneway(perfs[0:10],perfs[10:20],perfs[20:30])
+		# Kruskal-Wallis tests (Non-parametric ANOVAS)
+
+		# Between novices, intermediates and experts
+		anova_durations = kruskalwallis(durations[0:10],durations[10:20],durations[20:30])
+		anova_distances = kruskalwallis(angularDists[0:10],angularDists[10:20],angularDists[20:30])
+		anova_speeds = kruskalwallis(speeds[0:10],speeds[10:20],speeds[20:30])
+		anova_accels = kruskalwallis(averageAccels[0:10],averageAccels[10:20],averageAccels[20:30])
+		anova_smoothness = kruskalwallis(smoothnesses[0:10],smoothnesses[10:20],smoothnesses[20:30])
+		anova_handedness = kruskalwallis(handednesses[0:10],handednesses[10:20],handednesses[20:30])
+		anova_variances = kruskalwallis(speedVariances[0:10],speedVariances[10:20],speedVariances[20:30])
+		anova_ambidexterities = kruskalwallis(ambidexterities[0:10],ambidexterities[10:20],ambidexterities[20:30])
+		anova_perfs = kruskalwallis(perfs[0:10],perfs[10:20],perfs[20:30])
+
+		# Between experts and non-experts
+		anova_two_durations = mannwhitneyu(durations[0:20],durations[20:30])
+		anova_two_distances = mannwhitneyu(angularDists[0:20],angularDists[20:30])
+		anova_two_speeds = mannwhitneyu(speeds[0:20],speeds[20:30])
+		anova_two_accels = mannwhitneyu(averageAccels[0:20],averageAccels[20:30])
+		#anova_two_smoothness = mannwhitneyu(smoothnesses[0:10]+smoothnesses[10:20],smoothnesses[20:30])
+		anova_two_smoothness = mannwhitneyu(smoothnesses[0:20],smoothnesses[20:30])
+		anova_two_handedness = mannwhitneyu(handednesses[0:20],handednesses[20:30])
+		anova_two_variances = mannwhitneyu(speedVariances[0:20],speedVariances[20:30])
+		anova_two_ambidexterities = mannwhitneyu(ambidexterities[0:20],ambidexterities[20:30])
+		anova_two_perfs = mannwhitneyu(perfs[0:20],perfs[20:30])
 
 		# SCATTER PLOTS
+		def save_scatter(data,colours,title,ylabel,savePath,yLimTuple=None):
+			plt.figure()
+			plt.title(title)
+			plt.xlabel("Trials")
+			plt.ylabel(ylabel)
+			zippedAndSorted = sorted(zip(data,colours)) 
+			unzipped = zip(*zippedAndSorted)
+			plt.scatter( range(len(data)), unzipped[0], c=unzipped[1], s=60)
+			nov = plt.scatter([], [], color='r')
+			inter = plt.scatter([], [], color='g')
+			exp = plt.scatter([], [], color='b')
+			plt.legend((nov,inter,exp),['Novice','Intermediate','Expert'], loc=2)
+			plt.xticks( [] )
+			plt.gca().set_xlim(-1,len(data))
+			if yLimTuple:
+				plt.gca().set_xlim(yLimTuple)
+			plt.tight_layout()
+			with open(savePath, 'w') as figOut:
+				plt.savefig(figOut)
 
-		plt.figure()
-		plt.title("Task Duration")
-		plt.xlabel("Trials")
-		plt.ylabel("Time (seconds)")
-		zippedAndSorted = sorted(zip(durations,colours,ticks)) 
-		unzipped = zip(*zippedAndSorted)
-		plt.scatter( range(30), unzipped[0], c=unzipped[1], s=60)
-		nov = plt.scatter([], [], color='r')
-		inter = plt.scatter([], [], color='g')
-		exp = plt.scatter([], [], color='b')
-		plt.legend((nov,inter,exp),['Novice','Intermediate','Expert'], loc=2)
-		plt.xticks( [] )
-		plt.gca().set_xlim(-1,30)
-		plt.tight_layout()
-		with open("/Users/robertevans/Documents/University/Masters Project/Reports/Phase 2 Report/figs/keyhole_results/durations.pdf", 'w') as figOut:
-			plt.savefig(figOut)
-
-		plt.figure()
-		plt.title("Total Angular Distance")
-		plt.xlabel("Trials")
-		plt.ylabel("Rotation (radians)")
-		zippedAndSorted = sorted(zip(angularDists,colours,ticks))
-		unzipped = zip(*zippedAndSorted)
-		plt.scatter(range(30), unzipped[0], c=unzipped[1], s=60)
-		nov = plt.scatter([], [], color='r')
-		inter = plt.scatter([], [], color='g')
-		exp = plt.scatter([], [], color='b')
-		plt.legend((nov,inter,exp),['Novice','Intermediate','Expert'], loc=2)
-		plt.xticks( [] )
-		plt.gca().set_xlim(-1,30)
-		#plt.gca().set_ylim(0,300)
-		plt.tight_layout()
-		with open("/Users/robertevans/Documents/University/Masters Project/Reports/Phase 2 Report/figs/keyhole_results/distances.pdf", 'w') as figOut:
-			plt.savefig(figOut)
-
-		plt.figure()
-		plt.title("Average Speed")
-		plt.xlabel("Trials")
-		plt.ylabel("Speed (radians/second)")
-		zippedAndSorted = sorted(zip(speeds,colours,ticks))
-		unzipped = zip(*zippedAndSorted)
-		plt.scatter(range(30), unzipped[0], c=unzipped[1], s=60)
-		nov = plt.scatter([], [], color='r')
-		inter = plt.scatter([], [], color='g')
-		exp = plt.scatter([], [], color='b')
-		plt.legend((nov,inter,exp),['Novice','Intermediate','Expert'], loc=2)
-		plt.xticks( [] )
-		plt.gca().set_xlim(-1,30)
-		#plt.gca().set_ylim(0,0.75)
-		plt.tight_layout()
-		with open("/Users/robertevans/Documents/University/Masters Project/Reports/Phase 2 Report/figs/keyhole_results/speeds.pdf", 'w') as figOut:
-			plt.savefig(figOut)
-
-		plt.figure()
-		plt.title("Average Acceleration")
-		plt.xlabel("Trials")
-		plt.ylabel("Acceleration (radians/second$^2$)")
-		zippedAndSorted = sorted(zip(averageAccels,colours,ticks))
-		unzipped = zip(*zippedAndSorted)
-		plt.scatter(range(30), unzipped[0], c=unzipped[1], s=60)
-		nov = plt.scatter([], [], color='r')
-		inter = plt.scatter([], [], color='g')
-		exp = plt.scatter([], [], color='b')
-		plt.legend((nov,inter,exp),['Novice','Intermediate','Expert'], loc=2)
-		plt.xticks( [] )
-		plt.gca().set_xlim(-1,30)
-		plt.gca().set_ylim(0,0.002)
-		#plt.gca().set_ylim(0,0.016)
-		plt.tight_layout()
-		with open("/Users/robertevans/Documents/University/Masters Project/Reports/Phase 2 Report/figs/keyhole_results/accels.pdf", 'w') as figOut:
-			plt.savefig(figOut)
-
-		plt.figure()
-		plt.title("Motion Smoothness")
-		plt.xlabel("Trials")
-		plt.ylabel("Smoothness (radians/second$^3$)")
-		zippedAndSorted = filter(lambda x: x[2] not in ['N10','N1'], sorted(zip(smoothnesses,colours,ticks))) # Remove wild outliers
-		unzipped = zip(*zippedAndSorted)
-		plt.scatter(range(28), unzipped[0], c=unzipped[1], s=60)
-		nov = plt.scatter([], [], color='r')
-		inter = plt.scatter([], [], color='g')
-		exp = plt.scatter([], [], color='b')
-		plt.legend((nov,inter,exp),['Novice','Intermediate','Expert'], loc=2)
-		plt.xticks( [] )
-		plt.gca().set_xlim(-1,28)
-		#plt.gca().set_ylim(0,2000000000)
-		plt.tight_layout()
-		with open("/Users/robertevans/Documents/University/Masters Project/Reports/Phase 2 Report/figs/keyhole_results/smoothnesses.pdf", 'w') as figOut:
-			plt.savefig(figOut)
-
-		plt.figure()
-		plt.title("Handedness")
-		plt.xlabel("Trials")
-		plt.ylabel("Right distance minus left distance per frame (radians)")
-		zippedAndSorted = sorted(zip(handednesses,colours,ticks))
-		unzipped = zip(*zippedAndSorted)
-		plt.scatter(range(30), unzipped[0], c=unzipped[1], s=60)
-		nov = plt.scatter([], [], color='r')
-		inter = plt.scatter([], [], color='g')
-		exp = plt.scatter([], [], color='b')
-		plt.legend((nov,inter,exp),['Novice','Intermediate','Expert'], loc=2)
-		plt.xticks( [] )
-		plt.gca().set_xlim(-1,30)
-		#plt.gca().set_ylim(-0.2,0.05)
-		plt.tight_layout()
-		with open("/Users/robertevans/Documents/University/Masters Project/Reports/Phase 2 Report/figs/keyhole_results/handednesses.pdf", 'w') as figOut:
-			plt.savefig(figOut)
-
-		plt.figure()
-		plt.title("Variance of Angular Speed")
-		plt.xlabel("Trials")
-		plt.ylabel("Variance (radians/second)")
-		zippedAndSorted = sorted(zip(speedVariances,colours,ticks))
-		unzipped = zip(*zippedAndSorted)
-		plt.scatter(range(30), unzipped[0], c=unzipped[1], s=60)
-		nov = plt.scatter([], [], color='r')
-		inter = plt.scatter([], [], color='g')
-		exp = plt.scatter([], [], color='b')
-		plt.legend((nov,inter,exp),['Novice','Intermediate','Expert'], loc=2)
-		plt.xticks( [] )
-		plt.gca().set_xlim(-1,30)
-		#plt.gca().set_ylim(0,0.00008)
-		plt.tight_layout()
-		with open("/Users/robertevans/Documents/University/Masters Project/Reports/Phase 2 Report/figs/keyhole_results/variances.pdf", 'w') as figOut:
-			plt.savefig(figOut)
-
-		plt.figure()
-		plt.title("Ambidexterity")
-		plt.xlabel("Trials")
-		plt.ylabel("Pearson coefficient for left/right speeds (per frame)")
-		zippedAndSorted = sorted(zip(ambidexterities,colours,ticks))
-		unzipped = zip(*zippedAndSorted)
-		plt.scatter(range(30), unzipped[0], c=unzipped[1], s=60)
-		nov = plt.scatter([], [], color='r')
-		inter = plt.scatter([], [], color='g')
-		exp = plt.scatter([], [], color='b')
-		plt.legend((nov,inter,exp),['Novice','Intermediate','Expert'], loc=2)
-		plt.xticks( [] )
-		plt.gca().set_xlim(-1,30)
-		plt.tight_layout()
-		with open("/Users/robertevans/Documents/University/Masters Project/Reports/Phase 2 Report/figs/keyhole_results/ambidexterities.pdf", 'w') as figOut:
-			plt.savefig(figOut)
-
-		plt.figure()
-		plt.title("Total Task Performance")
-		plt.xlabel("Trials")
-		plt.ylabel("Performance (radians$^{-1}$seconds$^{-1}$)")
-		zipedAnSorted = sorted(zip(perfs,colours,ticks))
-		unzipped = zip(*zippedAndSorted)
-		plt.scatter(range(30), unzipped[0], c=unzipped[1], s=60)
-		nov = plt.scatter([], [], color='r')
-		inter = plt.scatter([], [], color='g')
-		exp = plt.scatter([], [], color='b')
-		plt.legend((nov,inter,exp),['Novice','Intermediate','Expert'], loc=2)
-		plt.xticks( [] )
-		plt.gca().set_xlim(-1,30)
-		#plt.gca().set_ylim(0,0.001)
-		plt.tight_layout()
-		with open("/Users/robertevans/Documents/University/Masters Project/Reports/Phase 2 Report/figs/keyhole_results/scores.pdf", 'w') as figOut:
-			plt.savefig(figOut)
+		save_scatter(durations,colours,"Task Duration","Time (seconds)","/Users/robertevans/repos/minf/keyhole_graphs/durations.png")
+		save_scatter(angularDists,colours,"Total Angular Distance","Rotation (radians)","/Users/robertevans/repos/minf/keyhole_graphs/distances.png")
+		save_scatter(speeds,colours,"Average Speed","Speed (radians/second)","/Users/robertevans/repos/minf/keyhole_graphs/speeds.png")
+		save_scatter(averageAccels,colours,"Average Acceleration","Acceleration (radians/second$^2$)","/Users/robertevans/repos/minf/keyhole_graphs/accels.png")
+		save_scatter(smoothnesses,colours,"Motion Smoothness","Smoothness (radians/second$^3$)","/Users/robertevans/repos/minf/keyhole_graphs/smoothnesses.png")
+		save_scatter(handednesses,colours,"Handedness","Right distance minus left distance per frame (radians)","/Users/robertevans/repos/minf/keyhole_graphs/handednesses.png")
+		save_scatter(speedVariances,colours,"Variance of Angular Speed","Variance (radians/second)","/Users/robertevans/repos/minf/keyhole_graphs/variances.png")
+		save_scatter(ambidexterities,colours,"Ambidexterity","Spearman correlation for left/right speeds (per frame)","/Users/robertevans/repos/minf/keyhole_graphs/ambidexterities.png")
+		save_scatter(perfs,colours,"Total Task Performance","Score (radians$^{-1}$seconds$^{-1}$)","/Users/robertevans/repos/minf/keyhole_graphs/scores.png")
 
 		# BOX PLOTS
+		def save_box_plot(data,key,p_value,savePath,title,ylabel):
+			plt.figure()
+			plt.title("{0} - p-value: {1:.3g}".format(title, p_value))
+			plt.ylabel(ylabel)
+			plt.boxplot( data )
+			plt.xticks( range(1,len(data)+1), key )
+			plt.tight_layout()
+			with open(savePath, 'w') as figOut:
+				plt.savefig(figOut)
 
-		plt.figure()
-		plt.title("ANOVA p-value: {0:.3g}".format(anova_durations[1]))
-		plt.ylabel("Time (seconds)")
-		plt.boxplot( [durations[:10], durations[10:20], durations[20:]] )
-		plt.xticks( range(1,4), ('Novices', 'Intermediates', 'Experts') )
-		plt.tight_layout()
-		with open("/Users/robertevans/Documents/University/Masters Project/Reports/Phase 2 Report/figs/keyhole_results/durations_box.pdf", 'w') as figOut:
-			plt.savefig(figOut)
+		save_box_plot([durations[:10], durations[10:20], durations[20:]],('Novices','Intermediates','Experts'),anova_durations[1],"/Users/robertevans/repos/minf/keyhole_graphs/durations_box_three.png","Duration","Time (seconds)")
+		save_box_plot([angularDists[:10], angularDists[10:20], angularDists[20:]],('Novices','Intermediates','Experts'),anova_distances[1],"/Users/robertevans/repos/minf/keyhole_graphs/distances_box_three.png","Distance","Rotation (radians)")
+		save_box_plot([speeds[:10], speeds[10:20], speeds[20:]],('Novices','Intermediates','Experts'),anova_speeds[1],"/Users/robertevans/repos/minf/keyhole_graphs/speeds_box_three.png","Speed","Speed (radians/second)")
+		save_box_plot([averageAccels[:10], averageAccels[10:20], averageAccels[20:]],('Novices','Intermediates','Experts'),anova_accels[1],"/Users/robertevans/repos/minf/keyhole_graphs/accels_box_three.png","Acceleration","Acceleration (radians/second$^2$)")
+		save_box_plot([smoothnesses[0:10], smoothnesses[10:20], smoothnesses[20:]],('Novices','Intermediates','Experts'),anova_smoothness[1],"/Users/robertevans/repos/minf/keyhole_graphs/smoothnesses_box_three.png","Smoothness","Smoothness (radians/second$^3$)")
+		save_box_plot([handednesses[:10], handednesses[10:20], handednesses[20:]],('Novices','Intermediates','Experts'),anova_handedness[1],"/Users/robertevans/repos/minf/keyhole_graphs/handednesses_box_three.png","Handedness","Right distance minus left distance per frame (radians)")
+		save_box_plot([speedVariances[:10], speedVariances[10:20], speedVariances[20:]],('Novices','Intermediates','Experts'),anova_variances[1],"/Users/robertevans/repos/minf/keyhole_graphs/variances_box_three.png","Speed Variance","Variance (radians/second)")
+		save_box_plot([ambidexterities[:10], ambidexterities[10:20], ambidexterities[20:]],('Novices','Intermediates','Experts'),anova_ambidexterities[1],"/Users/robertevans/repos/minf/keyhole_graphs/ambidexterities_box_three.png","Ambidexterity","Spearman correlation for left/right speeds (per frame)")
+		save_box_plot([perfs[:10], perfs[10:20], perfs[20:]],('Novices','Intermediates','Experts'),anova_perfs[1],"/Users/robertevans/repos/minf/keyhole_graphs/scores_box_three.png","Performance","Score (radians$^{-1}$seconds$^{-1}$)")
 
-		plt.figure()
-		plt.title("ANOVA p-value: {0:.3g}".format(anova_distances[1]))
-		plt.ylabel("Rotation (radians)")
-		plt.boxplot( [angularDists[:10], angularDists[10:20], angularDists[20:]] )
-		plt.xticks( range(1,4), ('Novices', 'Intermediates', 'Experts') )
-		plt.tight_layout()
-		with open("/Users/robertevans/Documents/University/Masters Project/Reports/Phase 2 Report/figs/keyhole_results/distances_box.pdf", 'w') as figOut:
-			plt.savefig(figOut)
-
-		plt.figure()
-		plt.title("ANOVA p-value: {0:.3g}".format(anova_speeds[1]))
-		plt.ylabel("Speed (radians/second)")
-		plt.boxplot( [speeds[:10], speeds[10:20], speeds[20:]] )
-		plt.xticks( range(1,4), ('Novices', 'Intermediates', 'Experts') )
-		#plt.gca().set_ylim(0,0.75)
-		plt.tight_layout()
-		with open("/Users/robertevans/Documents/University/Masters Project/Reports/Phase 2 Report/figs/keyhole_results/speeds_box.pdf", 'w') as figOut:
-			plt.savefig(figOut)
-
-		plt.figure()
-		plt.title("ANOVA p-value: {0:.3g}".format(anova_accels[1]))
-		plt.ylabel("Acceleration (radians/second$^2$)")
-		plt.boxplot( [averageAccels[:10], averageAccels[10:20], averageAccels[20:]] )
-		plt.xticks( range(1,4), ('Novices', 'Intermediates', 'Experts') )
-		plt.tight_layout()
-		with open("/Users/robertevans/Documents/University/Masters Project/Reports/Phase 2 Report/figs/keyhole_results/accels_box.pdf", 'w') as figOut:
-			plt.savefig(figOut)
-
-		plt.figure()
-		plt.title("ANOVA p-value: {0:.3g}".format(anova_smoothness[1]))
-		plt.ylabel("Smoothness (radians/second$^3$)")
-		plt.boxplot( [smoothnesses[1:9], smoothnesses[10:20], smoothnesses[20:]] )
-		plt.xticks( range(1,4), ('Novices', 'Intermediates', 'Experts') )
-		plt.tight_layout()
-		with open("/Users/robertevans/Documents/University/Masters Project/Reports/Phase 2 Report/figs/keyhole_results/smoothnesses_box.pdf", 'w') as figOut:
-			plt.savefig(figOut)
-
-		plt.figure()
-		plt.title("ANOVA p-value: {0:.3g}".format(anova_handedness[1]))
-		plt.ylabel("Right distance minus left distance per frame (radians)")
-		plt.boxplot( [handednesses[:10], handednesses[10:20], handednesses[20:]] )
-		plt.xticks( range(1,4), ('Novices', 'Intermediates', 'Experts') )
-		plt.tight_layout()
-		with open("/Users/robertevans/Documents/University/Masters Project/Reports/Phase 2 Report/figs/keyhole_results/handednesses_box.pdf", 'w') as figOut:
-			plt.savefig(figOut)
-
-		plt.figure()
-		plt.title("ANOVA p-value: {0:.3g}".format(anova_variances[1]))
-		plt.ylabel("Variance (radians/second)")
-		plt.boxplot( [speedVariances[:10], speedVariances[10:20], speedVariances[20:]] )
-		plt.xticks( range(1,4), ('Novices', 'Intermediates', 'Experts') )
-		plt.tight_layout()
-		with open("/Users/robertevans/Documents/University/Masters Project/Reports/Phase 2 Report/figs/keyhole_results/variances_box.pdf", 'w') as figOut:
-			plt.savefig(figOut)
-
-		plt.figure()
-		plt.title("ANOVA p-value: {0:.3g}".format(anova_ambidexterities[1]))
-		plt.ylabel("Pearson coefficient for left/right speeds (per frame)")
-		plt.boxplot( [ambidexterities[:10], ambidexterities[10:20], ambidexterities[20:]] )
-		plt.xticks( range(1,4), ('Novices', 'Intermediates', 'Experts') )
-		plt.tight_layout()
-		with open("/Users/robertevans/Documents/University/Masters Project/Reports/Phase 2 Report/figs/keyhole_results/ambidexterities_box.pdf", 'w') as figOut:
-			plt.savefig(figOut)
-
-		plt.figure()
-		plt.title("ANOVA p-value: {0:.3g}".format(anova_perfs[1]))
-		plt.ylabel("Performance (radians$^{-1}$seconds$^{-1}$)")
-		plt.boxplot( [perfs[:10], perfs[10:20], perfs[20:]] )
-		plt.xticks( range(1,4), ('Novices', 'Intermediates', 'Experts') )
-		plt.tight_layout()
-		with open("/Users/robertevans/Documents/University/Masters Project/Reports/Phase 2 Report/figs/keyhole_results/scores_box.pdf", 'w') as figOut:
-			plt.savefig(figOut)
+		save_box_plot([durations[:20], durations[20:]],('Non-Experts','Experts'),anova_two_durations[1]*2,"/Users/robertevans/repos/minf/keyhole_graphs/durations_box_two.png","Duration","Time (seconds)")
+		save_box_plot([angularDists[:20], angularDists[20:]],('Non-Experts','Experts'),anova_two_distances[1]*2,"/Users/robertevans/repos/minf/keyhole_graphs/distances_box_two.png","Distance","Rotation (radians)")
+		save_box_plot([speeds[:20], speeds[20:]],('Non-Experts','Experts'),anova_two_speeds[1]*2,"/Users/robertevans/repos/minf/keyhole_graphs/speeds_box_two.png","Speed","Speed (radians/second)")
+		save_box_plot([averageAccels[:20], averageAccels[20:]],('Non-Experts','Experts'),anova_two_accels[1]*2,"/Users/robertevans/repos/minf/keyhole_graphs/accels_box_two.png","Acceleration","Acceleration (radians/second$^2$)")
+		save_box_plot([smoothnesses[0:10]+smoothnesses[10:20], smoothnesses[20:]],('Non-Experts','Experts'),anova_two_smoothness[1]*2,"/Users/robertevans/repos/minf/keyhole_graphs/smoothnesses_box_two.png","Smoothness","Smoothness (radians/second$^3$)")
+		save_box_plot([handednesses[:20], handednesses[20:]],('Non-Experts','Experts'),anova_two_handedness[1]*2,"/Users/robertevans/repos/minf/keyhole_graphs/handednesses_box_two.png","Handedness","Right distance minus left distance per frame (radians)")
+		save_box_plot([speedVariances[:20], speedVariances[20:]],('Non-Experts','Experts'),anova_two_variances[1]*2,"/Users/robertevans/repos/minf/keyhole_graphs/variances_box_two.png","Speed Variance","Variance (radians/second)")
+		save_box_plot([ambidexterities[:20], ambidexterities[20:]],('Non-Experts','Experts'),anova_two_ambidexterities[1]*2,"/Users/robertevans/repos/minf/keyhole_graphs/ambidexterities_box_two.png","Ambidexterity","Spearman correlation for left/right speeds (per frame)")
+		save_box_plot([perfs[:20], perfs[20:]],('Non-Experts','Experts'),anova_two_perfs[1]*2,"/Users/robertevans/repos/minf/keyhole_graphs/scores_box_two.png","Performance","Score (radians$^{-1}$seconds$^{-1}$)")
 
 		plt.show()
 
@@ -382,59 +234,59 @@ class KeyholeSimPerformance:
 		vision_handedness = [1.52,0.7,0.74,1.32,1.56,1.19,1.32,1.08,1.14,0.77,1.08,1.9,1.3,1.55,0.44,1.92,0.95,1.05,1.14,1.01,0.57,1.16,0.86,1.5,1.24,1.09]
 
 		# Remove wild outliers
-		orient_smoothness = orient_smoothness[:11]+orient_smoothness[12:]
-		vision_smoothness = vision_smoothness[:11]+vision_smoothness[12:]
+		#orient_smoothness = orient_smoothness[:11]+orient_smoothness[12:]
+		#vision_smoothness = vision_smoothness[:11]+vision_smoothness[12:]
 
-		corr_durations = pearsonr(orient_durations, vision_durations)
-		corr_distances = pearsonr(orient_distances, vision_distances)
-		corr_speeds = pearsonr(orient_speeds, vision_speeds)
-		corr_accels = pearsonr(orient_accels, vision_accels)
-		corr_smoothness = pearsonr(orient_smoothness, vision_smoothness)
-		corr_handedness = pearsonr(orient_handedness, vision_handedness)
+		corr_durations = spearmanr(orient_durations, vision_durations)
+		corr_distances = spearmanr(orient_distances, vision_distances)
+		corr_speeds = spearmanr(orient_speeds, vision_speeds)
+		corr_accels = spearmanr(orient_accels, vision_accels)
+		corr_smoothness = spearmanr(orient_smoothness, vision_smoothness)
+		corr_handedness = spearmanr(orient_handedness, vision_handedness)
 
 		plt.figure()
 		plt.xlabel('Orient Duration (seconds)')
 		plt.ylabel('Vision Duration (seconds)')
-		plt.title("Task Duration\nCorrelation: {0:.3g} p-value: {1:.3g}".format(corr_durations[0], corr_durations[1]))
+		plt.title("Task Duration\nSpearman Correlation: {0:.3g} p-value: {1:.3g}".format(corr_durations[0], corr_durations[1]))
 		plt.scatter(orient_durations, vision_durations, c=colour_code, s=60)
 		nov = plt.scatter([], [], color='r')
 		inter = plt.scatter([], [], color='g')
 		exp = plt.scatter([], [], color='b')
 		plt.legend((nov,inter,exp),['Novice','Intermediate','Expert'], loc=2)
 		plt.tight_layout()
-		with open("/Users/robertevans/Documents/University/Masters Project/Reports/Phase 2 Report/figs/keyhole_results/durations_corr.pdf", 'w') as figOut:
+		with open("/Users/robertevans/repos/minf/keyhole_graphs/durations_corr.png", 'w') as figOut:
 			plt.savefig(figOut)
 
 		plt.figure()
 		plt.xlabel('Angular Distance (radians)')
 		plt.ylabel('Visual Distance (metres)')
-		plt.title("Total Distance\nCorrelation: {0:.3g} p-value: {1:.3g}".format(corr_distances[0], corr_distances[1]))
+		plt.title("Total Distance\nSpearman Correlation: {0:.3g} p-value: {1:.3g}".format(corr_distances[0], corr_distances[1]))
 		plt.scatter(orient_distances, vision_distances, c=colour_code, s=60)
 		nov = plt.scatter([], [], color='r')
 		inter = plt.scatter([], [], color='g')
 		exp = plt.scatter([], [], color='b')
 		plt.legend((nov,inter,exp),['Novice','Intermediate','Expert'], loc=2)
 		plt.tight_layout()
-		with open("/Users/robertevans/Documents/University/Masters Project/Reports/Phase 2 Report/figs/keyhole_results/distances_corr.pdf", 'w') as figOut:
+		with open("/Users/robertevans/repos/minf/keyhole_graphs/distances_corr.png", 'w') as figOut:
 			plt.savefig(figOut)
 
 		plt.figure()
 		plt.xlabel('Angular Speed (radians per second)')
 		plt.ylabel('Visual Speed (metres per second)')
-		plt.title("Average Speed\nCorrelation: {0:.3g} p-value: {1:.3g}".format(corr_speeds[0], corr_speeds[1]))
+		plt.title("Average Speed\nSpearman Correlation: {0:.3g} p-value: {1:.3g}".format(corr_speeds[0], corr_speeds[1]))
 		plt.scatter(orient_speeds, vision_speeds, c=colour_code, s=60)
 		nov = plt.scatter([], [], color='r')
 		inter = plt.scatter([], [], color='g')
 		exp = plt.scatter([], [], color='b')
 		plt.legend((nov,inter,exp),['Novice','Intermediate','Expert'], loc=2)
 		plt.tight_layout()
-		with open("/Users/robertevans/Documents/University/Masters Project/Reports/Phase 2 Report/figs/keyhole_results/speeds_corr.pdf", 'w') as figOut:
+		with open("/Users/robertevans/repos/minf/keyhole_graphs/speeds_corr.png", 'w') as figOut:
 			plt.savefig(figOut)
 
 		plt.figure()
 		plt.xlabel('Angular Acceleration (radians per second$^2$)')
 		plt.ylabel('Visual Acceleration (metres per second$^2$)')
-		plt.title("Average Acceleration\nCorrelation: {0:.3g} p-value: {1:.3g}".format(corr_accels[0], corr_accels[1]))
+		plt.title("Average Acceleration\nSpearman Correlation: {0:.3g} p-value: {1:.3g}".format(corr_accels[0], corr_accels[1]))
 		plt.scatter(orient_accels, vision_accels, c=colour_code, s=60)
 		nov = plt.scatter([], [], color='r')
 		inter = plt.scatter([], [], color='g')
@@ -443,33 +295,33 @@ class KeyholeSimPerformance:
 		plt.gca().set_xlim(0,0.002)
 		plt.gca().set_ylim(0.8,2.6)
 		plt.tight_layout()
-		with open("/Users/robertevans/Documents/University/Masters Project/Reports/Phase 2 Report/figs/keyhole_results/accels_corr.pdf", 'w') as figOut:
+		with open("/Users/robertevans/repos/minf/keyhole_graphs/accels_corr.png", 'w') as figOut:
 			plt.savefig(figOut)
 
 		plt.figure()
 		plt.xlabel('Angular Smoothness (radians per second$^3$)')
 		plt.ylabel('Visual Smoothness (metres per second$^3$)')
-		plt.title("Motion Smoothness\nCorrelation: {0:.3g} p-value: {1:.3g}".format(corr_smoothness[0], corr_smoothness[1]))
+		plt.title("Motion Smoothness\nSpearman Correlation: {0:.3g} p-value: {1:.3g}".format(corr_smoothness[0], corr_smoothness[1]))
 		plt.scatter(orient_smoothness, vision_smoothness, c=colour_code, s=60)
 		nov = plt.scatter([], [], color='r')
 		inter = plt.scatter([], [], color='g')
 		exp = plt.scatter([], [], color='b')
 		plt.legend((nov,inter,exp),['Novice','Intermediate','Expert'], loc=1)
 		plt.tight_layout()
-		with open("/Users/robertevans/Documents/University/Masters Project/Reports/Phase 2 Report/figs/keyhole_results/smoothnesses_corr.pdf", 'w') as figOut:
+		with open("/Users/robertevans/repos/minf/keyhole_graphs/smoothnesses_corr.png", 'w') as figOut:
 			plt.savefig(figOut)
 
 		plt.figure()
 		plt.xlabel('Orient Handedness bias (radians)')
 		plt.ylabel('Visual Handedness bias (metres)')
-		plt.title("Handedness\nCorrelation: {0:.3g} p-value: {1:.3g}".format(corr_handedness[0], corr_handedness[1]))
+		plt.title("Handedness\nSpearman Correlation: {0:.3g} p-value: {1:.3g}".format(corr_handedness[0], corr_handedness[1]))
 		plt.scatter(orient_handedness, vision_handedness, c=colour_code, s=60)
 		nov = plt.scatter([], [], color='r')
 		inter = plt.scatter([], [], color='g')
 		exp = plt.scatter([], [], color='b')
 		plt.legend((nov,inter,exp),['Novice','Intermediate','Expert'], loc=2)
 		plt.tight_layout()
-		with open("/Users/robertevans/Documents/University/Masters Project/Reports/Phase 2 Report/figs/keyhole_results/handednesses_corr.pdf", 'w') as figOut:
+		with open("/Users/robertevans/repos/minf/keyhole_graphs/handednesses_corr.png", 'w') as figOut:
 			plt.savefig(figOut)
 
 		plt.show()
@@ -513,15 +365,8 @@ class KeyholeSimPerformance:
 
 	def classifiers(self):
 		# Get performance data.  A less busy person would put this in its own function.
-		self.novicePerfs = []
-		self.intermediatePerfs = []
-		self.expertPerfs = []
-		for n in self.db.novice:
-			self.novicePerfs.append( self.performance( n ) )
-		for i in self.db.intermediate:
-			self.intermediatePerfs.append( self.performance( i ) )
-		for e in self.db.expert:
-			self.expertPerfs.append( self.performance( e ) )
+		if not self.perfsCalculated:
+			self.calculatePerformances()	
 
 		accels = map(lambda x: x['averageAccel'], self.novicePerfs+self.intermediatePerfs+self.expertPerfs)
 		durations = map(lambda x: x['duration'], self.novicePerfs+self.intermediatePerfs+self.expertPerfs)
@@ -532,13 +377,13 @@ class KeyholeSimPerformance:
 		# Make feature and target vectors
 		X = np.array(zip(accels,durations,smooths,distances,ambidexterities))
 		y = np.array([0]*10 + [0.25, 1.0/3, 1.0/3, 0.5, 0.5, 0.5, 2, 2, 2, 2] + [6, 6, 6, 8, 8, 8, 10, 10, 10, 6]) # Experience levels in years
+		#y = np.array([0]*10 + [1]*10 + [2]*10)
 
-		# Make test and training set 
-		X_train, X_test, y_train, y_test = cross_validation.train_test_split(X,y,test_size=0.5)
-
-		# Fit linear regressor to weights
-		linearFit = LinearRegression().fit(X_train,y_train)
-		perfs = map( lambda x: linearFit.intercept_ + sum(np.array(x) * linearFit.coef_), X_test)
+		'''
+		paired = zip(X,y)
+		shuffle(paired)
+		X,y = map(np.array, zip(*paired))
+		'''
 
 		def resolveClass(y):
 			if y <= 0.1:
@@ -548,19 +393,65 @@ class KeyholeSimPerformance:
 			else:
 				return 'b'
 
-		colours = map( resolveClass, y_test )
+		# Cross validation
+		all_colours = []
+		all_regressions = []
+		indexes = []
+		skf = cross_validation.StratifiedKFold(map(resolveClass,y), n_folds=10)
+		for train_index, test_index in skf:
+			indexes.extend(test_index)
 
-		classes = zip(perfs, colours)
+			X_train, X_test = X[train_index], X[test_index]
+			y_train, y_test = y[train_index], y[test_index]
+			linearRegressor = LinearRegression(normalize=True).fit(X_train,y_train)
+			regressions = map( linearRegressor.decision_function, X_test)
+			class_colours = map( resolveClass, y_test )
 
-		anova_perfs = f_oneway([t[0] for t in classes if t[1] == 'r'],[t[0] for t in classes if t[1] == 'g'],[t[0] for t in classes if t[1] == 'b'])
+			all_regressions.extend(regressions)	
+			all_colours.extend(class_colours)
+			
+			print linearRegressor.intercept_, linearRegressor.coef_
+			"""
+			# Plot
+			classes = zip(regressions, class_colours)
+			plt.figure()
+			plt.title("Least Squares Fitted Performace")
+			plt.xlabel("Trials")
+			plt.ylabel("Score")
+			zippedAndSorted = sorted(zip(regressions,class_colours))
+			unzipped = zip(*zippedAndSorted)
+			plt.scatter(range(len(unzipped[0])), unzipped[0], c=unzipped[1], s=60)
+			nov = plt.scatter([], [], color='r')
+			inter = plt.scatter([], [], color='g')
+			exp = plt.scatter([], [], color='b')
+			plt.legend((nov,inter,exp),['Novice','Intermediate','Expert'], loc=2)
+			plt.xticks( [] )
+			#plt.gca().set_xlim(-1,15)
+			#plt.gca().set_ylim(-4,6)
+			plt.tight_layout()
+			plt.show()
+			"""
+
+
+		# Make test and training set 
+		#X_train, X_test, y_train, y_test = cross_validation.train_test_split(X,y,test_size=0.5)
+		# Fit linear regressor to weights
+		#linearFit = LinearRegression().fit(X_train,y_train)
+		#regressions = map( lambda x: linearFit.intercept_ + sum(np.array(x) * linearFit.coef_), X_test)
+
+		#colours = map( resolveClass, y_test )
+
+		classes = zip(all_regressions, all_colours)
+
+		anova_perfs = kruskalwallis([t[0] for t in classes if t[1] == 'r'],[t[0] for t in classes if t[1] == 'g'],[t[0] for t in classes if t[1] == 'b'])
 
 		plt.figure()
-		plt.title("Least Squares Fitted Performace")
+		plt.title("Linear Performance Score")
 		plt.xlabel("Trials")
 		plt.ylabel("Score")
-		zippedAndSorted = sorted(zip(perfs,colours))
+		zippedAndSorted = sorted(zip(all_regressions,all_colours))
 		unzipped = zip(*zippedAndSorted)
-		plt.scatter(range(15), unzipped[0], c=unzipped[1], s=60)
+		plt.scatter(range(len(unzipped[0])), unzipped[0], c=unzipped[1], s=60)
 		nov = plt.scatter([], [], color='r')
 		inter = plt.scatter([], [], color='g')
 		exp = plt.scatter([], [], color='b')
@@ -569,17 +460,17 @@ class KeyholeSimPerformance:
 		#plt.gca().set_xlim(-1,15)
 		#plt.gca().set_ylim(-4,6)
 		plt.tight_layout()
-		with open("/Users/robertevans/Documents/University/Masters Project/Reports/Phase 2 Report/figs/keyhole_results/linFit.pdf", 'w') as figOut:
+		with open("/Users/robertevans/repos/minf/keyhole_graphs/linFit.png", 'w') as figOut:
 			plt.savefig(figOut)
 
 		plt.figure()
-		plt.title("ANOVA p-value: {0:.3g}".format(anova_perfs[1]))
+		plt.title("Kruskal-Wallis p-value: {0:.3g}".format(anova_perfs[1]))
 		plt.ylabel("Score")
 		plt.boxplot( [[t[0] for t in classes if t[1] == 'r'],[t[0] for t in classes if t[1] == 'g'],[t[0] for t in classes if t[1] == 'b']] )
 		plt.xticks( range(1,4), ('Novices', 'Intermediates', 'Experts') )
 		#plt.gca().set_ylim(0,9)
 		plt.tight_layout()
-		with open("/Users/robertevans/Documents/University/Masters Project/Reports/Phase 2 Report/figs/keyhole_results/linFit_box.pdf", 'w') as figOut:
+		with open("/Users/robertevans/repos/minf/keyhole_graphs/linFit_box.png", 'w') as figOut:
 			plt.savefig(figOut)
 
 		plt.show()
