@@ -1,19 +1,31 @@
 __author__ = 'Robert Evans'
 
+''' Example usage (type into iPython):
+										import newVideoGraphAlignmentTool as tool
+										tool.tool('data.csv','video.mov')
+'''
+
 import matplotlib.pyplot as plt
 from subprocess import Popen, PIPE
-from master import readCSVfile
 import threading
+import numpy
 import time
+import os
 
 lock = threading.Lock()
 
 class tool():
-	def __init__(self, data, absolutePathToVideo):
-			if type(data) == str:
-				data = readCSVfile(data)
+	def __init__(self, csvFile, pathToVideo):
+			if not os.path.isfile(pathToVideo):
+				raise Exception("Invalid video file path")
+			if not (csvFile.lower().endswith('.csv') and os.path.isfile(csvFile)):
+				raise Exception("Invalid csv file path")
+
+			with open(csvFile,'r') as fin:
+				data = numpy.loadtxt(fin,delimiter=",")
+
 			self.graph = graph(data)
-			self.video = videoController(absolutePathToVideo)
+			self.video = videoController(os.path.abspath(pathToVideo))
 			self.coordinator = coordinator(self.graph, self.video)
 			self.coordinator.start()
 
@@ -24,32 +36,29 @@ class coordinator(threading.Thread):
 		super(coordinator, self).__init__()
 
 	def run(self):
-		try:
-			while True:
-				if self.g.isUpdated:
-					self.v.setTime((self.g.currentX/len(self.g.data)*self.v.getDuration()))
-					self.g.isUpdated = False
-				else:
-					if self.g.isUpdated == False:
-						lock.acquire()
-						self.g.setLine((float(self.v.getTime())/float(self.v.getDuration()))*len(self.g.data))
-						lock.release()
-				time.sleep(0.1)
-		except KeyboardInterrupt:
-			pass
+		while self.v.isOpen() == 'true' and plt.fignum_exists(self.g.fig.number):
+			if self.g.isUpdated:
+				self.v.setTime((self.g.currentX/len(self.g.data)*self.v.getDuration()))
+				self.g.isUpdated = False
+			else:
+				lock.acquire()
+				if self.g.isUpdated == False:
+					self.g.setLine((float(self.v.getTime())/float(self.v.getDuration()))*len(self.g.data))
+				lock.release()
+			time.sleep(0.1)
 
 class graph():
 	def __init__(self, data):
-	 	self.data=data
-	 	self.line=None
-	 	self.mousePressed = None
-	 	self.currentX = None
-	 	self.isUpdated = False
-	 	self.drawGraph()
+		self.data=data
+		self.line=None
+		self.mousePressed = None
+		self.currentX = None
+		self.isUpdated = False
+		self.drawGraph()
 
 	def drawGraph(self):
 		plt.ion()
-	 	self.fig = plt.figure()
+		self.fig = plt.figure()
 		self.ax = self.fig.add_subplot(111)
 		self.ax.plot(self.data)
 		self.fig.canvas.mpl_connect('button_press_event', self.onPress)
@@ -90,6 +99,7 @@ class graph():
 		if x>=0 and x<=len(self.data):
 			self.line = self.line = self.ax.axvline(x=x, color='red', linewidth=5)
 			self.fig.canvas.draw()
+			
 
 class videoController():
 	def __init__(self,absolutePathToVideo=None):
@@ -97,15 +107,22 @@ class videoController():
 			self.open(absolutePathToVideo)
 
 	def open(self, absolutePathToVideo):
-		self.quit()
-		applescript="""tell application "VLC"
-							OpenURL "file://%s"
-							activate
-							play
-							play
-						end tell""" % absolutePathToVideo
+		if os.path.isfile(absolutePathToVideo):
+			self.quit()
+			applescript="""tell application "VLC"
+								OpenURL "file://%s"
+								activate
+								play
+								play
+							end tell""" % absolutePathToVideo
+			p = Popen(['osascript', '-'] + ['2', '2'], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+			stdout, stderr = p.communicate(applescript)
+
+	def isOpen(self):
+		applescript="""application "VLC" is running"""
 		p = Popen(['osascript', '-'] + ['2', '2'], stdin=PIPE, stdout=PIPE, stderr=PIPE)
 		stdout, stderr = p.communicate(applescript)
+		return stdout[:-1]
 
 	def play(self):
 		applescript="""tell application "VLC"
