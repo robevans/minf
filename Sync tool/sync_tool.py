@@ -7,8 +7,9 @@ import ttk
 import tkFileDialog
 import tkMessageBox
 import os
-from numpy import loadtxt
 import json
+from collections import OrderedDict
+from numpy import loadtxt
 
 
 class GUI(Tk.Frame):
@@ -25,18 +26,19 @@ class GUI(Tk.Frame):
         self._data_file_name = None
         self._video_file_name = None
         self._events_file_name = None
+        self._annotated_events = {}
 
         # Menu controls
         menu_bar = Tk.Menu(self.parent)
         self.parent.config(menu=menu_bar)
 
         file_menu = Tk.Menu(menu_bar)
-        file_menu.add_command(label="Open...", command=self.on_load_data_or_video)
+        file_menu.add_command(label="Load...", command=self.on_load_data_or_video)
         file_menu.add_command(label="Save events", command=self.on_save_events)
         file_menu.add_command(label="Quit", command=self.quit)  # TODO: 'Are you sure?  Want to save?'
         menu_bar.add_cascade(label="File", menu=file_menu)
 
-        self._label_current_frames = Tk.Label(parent, text="Load a video and some data from the file menu!")
+        self._label_current_frames = Tk.Label(parent, text="Load a video and data from the file menu!")
         self._label_current_frames.grid(row=10, column=0, columnspan=4)
 
         # Video controls
@@ -85,10 +87,53 @@ class GUI(Tk.Frame):
         self.label_video_sync_events = Tk.Label(parent, text="Load a video!")
         self.label_video_sync_events.grid(row=90, column=0, columnspan=4)
 
-        # Annotation controls (TODO)
+        # Annotation controls
         ttk.Separator(parent, orient=Tk.HORIZONTAL).grid(row=100, column=0, columnspan=4, sticky="ew")
+        Tk.Label(parent, text="Annotate data events:").grid(row=110, column=0, columnspan=4)
+
+        Tk.Label(parent, text="Press a key (0-9) to mark an event.").grid(row=120, column=0, columnspan=4)
+
+        scrollbar = Tk.Scrollbar(parent)
+        scrollbar.grid(row=130, column=3, sticky='wns')
+        self.events_textbox = \
+            Tk.Text(parent, width=30, height=10, relief=Tk.RIDGE, borderwidth=2, yscrollcommand=scrollbar.set)
+        self.events_textbox.grid(row=130, column=1, columnspan=2, sticky='we')
+        self.events_textbox.tag_configure("center", justify='center')
+        self.events_textbox.tag_add("center", 1.0, "end")
+        scrollbar.config(command=self.events_textbox.yview)
+
+        def remove_text_focus(event):
+            if self.events_textbox is not self.winfo_containing(event.x_root, event.y_root):
+                # TODO: Validate edits and update dictionary, else ask user to fix or discard
+                parent.focus()
+                self.events_textbox.tag_add("center", 1.0, "end")
+        parent.bind("<Button>", remove_text_focus)
+
+        Tk.Label(parent, text="Data index : Event type").grid(row=140, column=0, columnspan=4, sticky='we')
+
+        # TODO: add keypress event bindings for graph and video player windows as well
+        parent.bind("<Key>", self.on_key_press_event)
 
         self._update_ui()
+
+    def on_key_press_event(self, event):
+        try:
+            char = event.char
+        except AttributeError:
+            char = event.key
+        if char.isdigit() and self.graph and self.graph.current_x is not None \
+                and self.parent.focus_get() is not self.events_textbox:
+            self._annotated_events[int(round(self.graph.current_x))] = char
+            self._display_annotated_events()
+
+    def _display_annotated_events(self):
+        self.events_textbox.delete(1.0, Tk.END)
+        if self._annotated_events:
+            output_string = ''
+            for key, value in sorted(self._annotated_events.items()):
+                output_string += "{0} : {1}\n".format(key, value)
+            self.events_textbox.insert(1.0, output_string)
+            self.events_textbox.tag_add("center", 1.0, "end")
 
     def set_synchronisation_point(self, point):
         if point == 'LD' and self.graph and self.graph.current_x is not None:
@@ -110,6 +155,7 @@ class GUI(Tk.Frame):
         self._check_if_graph_has_been_closed()
         self._update_synchronisation_event_labels()
         self._update_frame_label()
+        self._display_annotated_events()
 
         if self.graph:
             self._left_data_sync_button.config(state=Tk.NORMAL)
@@ -155,7 +201,7 @@ class GUI(Tk.Frame):
             self.label_video_sync_events.config(text="Load a video!")
 
     def _update_frame_label(self):
-        if self.video_player and self.graph and self.graph.current_x:
+        if self.video_player and self.graph and self.graph.current_x is not None:
             self._label_current_frames.config(text="Video frame: {0}\tData frame: {1}"
                                               .format(self.video_player.get_current_frame(), int(self.graph.current_x)))
         elif self.video_player:
@@ -163,7 +209,7 @@ class GUI(Tk.Frame):
         elif self.graph and self.graph.current_x:
             self._label_current_frames.config(text="Data frame: {0}".format(int(self.graph.current_x)))
         else:
-            self._label_current_frames.config(text="Load a video and some data from the file menu.")
+            self._label_current_frames.config(text="Load a video and data from the file menu.")
 
     def on_next_video_frame(self):
         if self.video_player:
@@ -210,7 +256,7 @@ class GUI(Tk.Frame):
     def _on_graph_line_update(self):
         if self.video_player:
             self.video_player.set_current_frame(self._get_video_frame_from_data_frame())
-            self._update_ui()
+        self._update_ui()
 
     def _get_data_frame_from_video_frame(self):
         if self.video_player and self.graph:
@@ -225,12 +271,17 @@ class GUI(Tk.Frame):
             return self._video_left_sync_point + offset*scale_factor
 
     def _data_to_video_scale_factor(self):
-        if self._data_left_sync_point is not None and self._data_right_sync_point is not None \
-                and self._video_left_sync_point is not None and self._video_right_sync_point is not None:
-            data_duration = self._data_right_sync_point - self._data_left_sync_point
-            video_duration = self._video_right_sync_point - self._video_left_sync_point
-            scale_factor = float(video_duration) / data_duration
-            return scale_factor
+        try:
+            if self._data_left_sync_point is not None and self._data_right_sync_point is not None \
+                    and self._video_left_sync_point is not None and self._video_right_sync_point is not None:
+                data_duration = self._data_right_sync_point - self._data_left_sync_point
+                video_duration = self._video_right_sync_point - self._video_left_sync_point
+                scale_factor = float(video_duration) / data_duration
+                return scale_factor
+        except ZeroDivisionError, e:
+            import sys
+            sys.stderr.write("warning: {0}".format(e))
+            return 1
 
     def _check_if_graph_has_been_closed(self):
         if self.graph:
@@ -249,11 +300,13 @@ class GUI(Tk.Frame):
                     # TODO: Load data through dialog box exposing options of numpy.loadtxt
                     self._check_if_graph_has_been_closed()
                     if not self.graph:
-                        self.graph = Graph(fl, self._on_graph_line_update)
+                        self.graph = Graph(fl, self._on_graph_line_update, self.on_key_press_event)
                     else:
                         self.graph.load_file(fl)
-                    self._data_left_sync_point = 0
-                    self._data_right_sync_point = self.graph.data_length - 1
+                    if self._data_left_sync_point is None or self._data_left_sync_point < 0:
+                        self._data_left_sync_point = 0
+                    if self._data_right_sync_point is None or self._data_right_sync_point >= self.graph.data_length:
+                        self._data_right_sync_point = self.graph.data_length - 1
                     self._data_file_name = file_name
                 except ValueError, e:
                     tkMessageBox.showerror("Error loading data file", e, icon=tkMessageBox.ERROR)
@@ -261,30 +314,41 @@ class GUI(Tk.Frame):
                     del self.graph
                     self.graph = None
             elif file_extension == '.json':
-                if self.video_player and self.graph:
-                    try:
-                        with open(fl, 'r') as events_file:
-                            data = json.load(events_file)
-                            points = data['synchronisation_points']
-                            self._data_left_sync_point = int(points['data_start'])
-                            self._data_right_sync_point = int(points['data_end'])
-                            self._video_left_sync_point = int(points['video_start'])
-                            self._video_right_sync_point = int(points['video_end'])
-                            self._events_file_name = file_name
+                try:
+                    with open(fl, 'r') as events_file:
+                        data = json.load(events_file)
+                        points = data['synchronisation_points']
+                        events = data['event_annotations']
+                        if type(events) is dict:
+                            self._annotated_events = \
+                                {int(data_index): int(event_type) for data_index, event_type in events.items()}
+                        else:
+                            self._annotated_events = {}
+                        if not self.graph or 0 <= points['data_start'] < self.graph.data_length:
+                            self._data_left_sync_point = points['data_start']
+                        if not self.graph or 0 <= points['data_end'] < self.graph.data_length:
+                            self._data_right_sync_point = points['data_end']
+                        if not self.video_player or 0 <= points['video_start'] < self.video_player.n_frames:
+                            self._video_left_sync_point = points['video_start']
+                        if not self.video_player or 0 <= points['video_end'] < self.video_player.n_frames:
+                            self._video_right_sync_point = points['video_end']
+                        self._events_file_name = file_name
+                        if self.graph and self.video_player:
                             self.graph.set_line(self._get_data_frame_from_video_frame(), call_callback=False)
-                            self._update_ui()
-                    except Exception, e:
-                        tkMessageBox.showerror("Error loading events", e, icon=tkMessageBox.ERROR)
-                else:
-                    tkMessageBox.showinfo("Could not load events", "Please load data and video files first.")
+                        self._update_ui()
+                except Exception, e:
+                    tkMessageBox.showerror("Error loading events", e, icon=tkMessageBox.ERROR)
             else:
                 try:
                     if not self.video_player:
                         self.video_player = VideoPlayer(fl)
                     else:
                         self.video_player.load_video(fl)
-                    self._video_left_sync_point = 0
-                    self._video_right_sync_point = self.video_player.n_frames - 1
+                    if self._video_left_sync_point is None or self._video_left_sync_point < 0:
+                        self._video_left_sync_point = 0
+                    if self._video_right_sync_point is None \
+                            or self._video_right_sync_point >= self.video_player.n_frames:
+                        self._video_right_sync_point = self.video_player.n_frames - 1
                     self._video_file_name = file_name
                 except ValueError, e:
                     tkMessageBox.showerror("Error loading video file", e, icon=tkMessageBox.ERROR)
@@ -293,20 +357,16 @@ class GUI(Tk.Frame):
             self._update_ui()
 
     def on_save_events(self):
-        if self.video_player and self.graph:
-            if self._events_file_name is None:
-                self._events_file_name = "{0}-{1}.json".format(self._data_file_name, self._video_file_name)
-            filename = tkFileDialog.asksaveasfilename(parent=self, initialfile=self._events_file_name)
-            if filename:
-                with open(filename, 'w') as outfile:
-                    data = {'synchronisation_points':
-                                {'data_start': self._data_left_sync_point, 'data_end': self._data_right_sync_point,
-                                 'video_start': self._video_left_sync_point, 'video_end': self._video_right_sync_point},
-                            'segmentation_points': None}
-                    json.dump(data, outfile)
-        else:
-            tkMessageBox.showinfo("Save events", "No events to save!")
-        # TODO: save other annotated events (segmentation points)
+        if self._events_file_name is None:
+            self._events_file_name = "{0}.json".format(self._data_file_name)
+        filename = tkFileDialog.asksaveasfilename(parent=self, initialfile=self._events_file_name)
+        if filename:
+            with open(filename, 'w') as outfile:
+                data = {'synchronisation_points':
+                            {'data_start': self._data_left_sync_point, 'data_end': self._data_right_sync_point,
+                             'video_start': self._video_left_sync_point, 'video_end': self._video_right_sync_point},
+                        'event_annotations': OrderedDict(sorted(self._annotated_events.items()))}
+                json.dump(data, outfile)
 
 
 class VideoPlayer:
@@ -361,7 +421,7 @@ class VideoPlayer:
 class Graph():
     """ Creates an interactive data plot with matplotlib and provides an API to control it. """
 
-    def __init__(self, csv_file, line_update_callback):
+    def __init__(self, csv_file, line_update_callback, key_press_callback):
         self.current_x = None
         self.data_length = None
         self._data = None
@@ -371,6 +431,7 @@ class Graph():
         self._line = None
         self._mouse_pressed = None
         self._line_update_callback = line_update_callback
+        self._key_press_callback = key_press_callback
 
         self._load_data(csv_file)
         self._draw_graph(str(csv_file))
@@ -389,6 +450,7 @@ class Graph():
             self._fig.canvas.mpl_connect('button_press_event', self.on_press)
             self._fig.canvas.mpl_connect('motion_notify_event', self.on_motion)
             self._fig.canvas.mpl_connect('button_release_event', self.on_release)
+            self._fig.canvas.mpl_connect('key_press_event', self._key_press_callback)
             self._toolbar = plt.get_current_fig_manager().toolbar
         self._ax = self._fig.add_subplot(111)
         self._ax.plot(self._data)
@@ -444,8 +506,8 @@ if __name__ == '__main__':
     """ Launches and manages all of the application's components """
     root = Tk.Tk()
     synchronisation_window = GUI(root)
-    root.title("Video-Data Synchronisation Tool")
-    root.geometry("308x500+50+50")
+    root.title("Video-Data Tool")
+    root.geometry("302x600+50+50")
 
     # TODO: Make all the components launch with a nice layout configuration
     root.mainloop()
