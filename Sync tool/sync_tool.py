@@ -3,6 +3,7 @@ __author__ = 'robertevans'
 import cv2
 import matplotlib.pyplot as plt
 import Tkinter as Tk
+import ttk
 import tkFileDialog
 import tkMessageBox
 import os
@@ -25,6 +26,7 @@ class GUI(Tk.Frame):
         self._video_file_name = None
         self._events_file_name = None
 
+        # Menu controls
         menu_bar = Tk.Menu(self.parent)
         self.parent.config(menu=menu_bar)
 
@@ -35,36 +37,56 @@ class GUI(Tk.Frame):
         menu_bar.add_cascade(label="File", menu=file_menu)
 
         self._label_current_frames = Tk.Label(parent, text="Load a video and some data from the file menu!")
-        self._label_current_frames.grid(row=0, column=0, columnspan=4)
+        self._label_current_frames.grid(row=10, column=0, columnspan=4)
 
-        self._next_frame_button = Tk.Button(parent, text="Next frame", command=self.on_next_frame)
-        self._next_frame_button.grid(row=2, column=1)
-        self._prev_frame_button = Tk.Button(parent, text="Prev frame", command=self.on_prev_frame)
-        self._prev_frame_button.grid(row=2, column=2)
+        # Video controls
+        ttk.Separator(parent, orient=Tk.HORIZONTAL).grid(row=15, column=0, columnspan=4, sticky="ew")
+        Tk.Label(parent, text="Video controls:").grid(row=16, column=0, columnspan=4)
 
-        self._video_slider = Tk.Scale(parent, command=self._on_slider_change, state=Tk.DISABLED, orient=Tk.HORIZONTAL,
-                                      length=300)
-        self._video_slider.grid(row=1, column=0, columnspan=4)
+        self._video_slider = Tk.Scale(parent, command=self._on_video_slider_change, orient=Tk.HORIZONTAL, length=300)
+        self._video_slider.grid(row=20, column=0, columnspan=4)
 
-        Tk.Label(parent, text="Set synchronisation events:").grid(row=3, column=0, columnspan=4)
+        self._prev_video_frame_button = Tk.Button(parent, text="Prev video frame", command=self.on_prev_video_frame)
+        self._prev_video_frame_button.grid(row=30, column=1)
+        self._next_video_frame_button = Tk.Button(parent, text="Next video frame", command=self.on_next_video_frame)
+        self._next_video_frame_button.grid(row=30, column=2)
+
+        # Data controls
+        ttk.Separator(parent, orient=Tk.HORIZONTAL).grid(row=32, column=0, columnspan=4, sticky="ew")
+        Tk.Label(parent, text="Data controls:").grid(row=33, column=0, columnspan=4)
+
+        self._data_slider = Tk.Scale(parent, command=self._on_data_slider_change, orient=Tk.HORIZONTAL, length=300)
+        self._data_slider.grid(row=34, column=0, columnspan=4)
+
+        self._prev_data_frame_button = Tk.Button(parent, text="Prev data frame", command=self.on_prev_data_frame)
+        self._prev_data_frame_button.grid(row=35, column=1)
+        self._next_data_frame_button = Tk.Button(parent, text="Next data frame", command=self.on_next_data_frame)
+        self._next_data_frame_button.grid(row=35, column=2)
+
+        # Synchronisation controls
+        ttk.Separator(parent, orient=Tk.HORIZONTAL).grid(row=40, column=0, columnspan=4, sticky="ew")
+        Tk.Label(parent, text="Set synchronisation events:").grid(row=50, column=0, columnspan=4)
 
         self._left_data_sync_button = Tk.Button(parent, text="Data start",
                                                 command=lambda: self.set_synchronisation_point('LD'))
-        self._left_data_sync_button.grid(row=4, column=1, sticky=Tk.E)
+        self._left_data_sync_button.grid(row=60, column=1, sticky=Tk.E)
         self._right_data_sync_button = Tk.Button(parent, text="Data end",
                                                  command=lambda: self.set_synchronisation_point('RD'))
-        self._right_data_sync_button.grid(row=4, column=2, sticky=Tk.W)
+        self._right_data_sync_button.grid(row=60, column=2, sticky=Tk.W)
         self._left_video_sync_button = Tk.Button(parent, text="Video start",
                                                  command=lambda: self.set_synchronisation_point('LV'))
-        self._left_video_sync_button.grid(row=5, column=1, sticky=Tk.E)
+        self._left_video_sync_button.grid(row=70, column=1, sticky=Tk.E)
         self._right_video_sync_button = Tk.Button(parent, text="Video end",
                                                   command=lambda: self.set_synchronisation_point('RV'))
-        self._right_video_sync_button.grid(row=5, column=2, sticky=Tk.W)
+        self._right_video_sync_button.grid(row=70, column=2, sticky=Tk.W)
 
         self.label_data_sync_events = Tk.Label(parent, text="Load some data!")
-        self.label_data_sync_events.grid(row=6, column=0, columnspan=4)
+        self.label_data_sync_events.grid(row=80, column=0, columnspan=4)
         self.label_video_sync_events = Tk.Label(parent, text="Load a video!")
-        self.label_video_sync_events.grid(row=7, column=0, columnspan=4)
+        self.label_video_sync_events.grid(row=90, column=0, columnspan=4)
+
+        # Annotation controls (TODO)
+        ttk.Separator(parent, orient=Tk.HORIZONTAL).grid(row=100, column=0, columnspan=4, sticky="ew")
 
         self._update_ui()
 
@@ -92,22 +114,31 @@ class GUI(Tk.Frame):
         if self.graph:
             self._left_data_sync_button.config(state=Tk.NORMAL)
             self._right_data_sync_button.config(state=Tk.NORMAL)
+            self._next_data_frame_button.config(state=Tk.NORMAL)
+            self._prev_data_frame_button.config(state=Tk.NORMAL)
+            self._data_slider.config(state=Tk.NORMAL, from_=0, to=self.graph.data_length)
+            if self.graph.current_x:
+                self._data_slider.set(self.graph.current_x)
         else:
             self._left_data_sync_button.config(state=Tk.DISABLED)
             self._right_data_sync_button.config(state=Tk.DISABLED)
+            self._next_data_frame_button.config(state=Tk.DISABLED)
+            self._next_data_frame_button.config(state=Tk.DISABLED)
+            self._prev_data_frame_button.config(state=Tk.DISABLED)
+            self._data_slider.config(state=Tk.DISABLED)
 
         if self.video_player:
             self._left_video_sync_button.config(state=Tk.NORMAL)
             self._right_video_sync_button.config(state=Tk.NORMAL)
-            self._next_frame_button.config(state=Tk.NORMAL)
-            self._prev_frame_button.config(state=Tk.NORMAL)
+            self._next_video_frame_button.config(state=Tk.NORMAL)
+            self._prev_video_frame_button.config(state=Tk.NORMAL)
             self._video_slider.config(state=Tk.NORMAL, from_=0, to=self.video_player.n_frames)
             self._video_slider.set(self.video_player.get_current_frame())
         else:
             self._left_video_sync_button.config(state=Tk.DISABLED)
             self._right_video_sync_button.config(state=Tk.DISABLED)
-            self._next_frame_button.config(state=Tk.DISABLED)
-            self._prev_frame_button.config(state=Tk.DISABLED)
+            self._next_video_frame_button.config(state=Tk.DISABLED)
+            self._prev_video_frame_button.config(state=Tk.DISABLED)
             self._video_slider.config(state=Tk.DISABLED)
 
     def _update_synchronisation_event_labels(self):
@@ -134,33 +165,52 @@ class GUI(Tk.Frame):
         else:
             self._label_current_frames.config(text="Load a video and some data from the file menu.")
 
-    def on_next_frame(self):
+    def on_next_video_frame(self):
         if self.video_player:
             self.video_player.show_next_frame()
             if self.graph:
                 self.graph.set_line(self._get_data_frame_from_video_frame(), call_callback=False)
-        else:
-            tkMessageBox.showwarning("Hello!", "Please load a video file.")
-        self._update_ui()
+            self._update_ui()
 
-    def on_prev_frame(self):
+    def on_prev_video_frame(self):
         if self.video_player:
             self.video_player.show_prev_frame()
             if self.graph:
                 self.graph.set_line(self._get_data_frame_from_video_frame(), call_callback=False)
-        else:
-            tkMessageBox.showwarning("Hello!", "Please load a video file.")
-        self._update_ui()
+            self._update_ui()
 
-    def _on_slider_change(self, slider_value):
+    def _on_video_slider_change(self, slider_value):
         if self.video_player:
             self.video_player.set_current_frame(int(slider_value))
-        self._update_ui()
+            if self.graph:
+                self.graph.set_line(self._get_data_frame_from_video_frame(), call_callback=False)
+            self._update_ui()
+
+    def on_next_data_frame(self):
+        if self.graph and self.graph.data_length:
+            if self.graph.current_x is None:
+                data_value = 0
+            else:
+                data_value = (self.graph.current_x + 1) % self.graph.data_length
+            self.graph.set_line(data_value)
+
+    def on_prev_data_frame(self):
+        if self.graph and self.graph.data_length:
+            if self.graph.current_x is None:
+                data_value = self.graph.data_length - 1
+            else:
+                data_value = (self.graph.current_x - 1) % self.graph.data_length
+            self.graph.set_line(data_value)
+
+    def _on_data_slider_change(self, slider_value):
+        if self.graph:
+            self.graph.set_line(int(slider_value))
+            self._update_ui()
 
     def _on_graph_line_update(self):
         if self.video_player:
             self.video_player.set_current_frame(self._get_video_frame_from_data_frame())
-        self._update_ui()
+            self._update_ui()
 
     def _get_data_frame_from_video_frame(self):
         if self.video_player and self.graph:
@@ -240,7 +290,7 @@ class GUI(Tk.Frame):
                     tkMessageBox.showerror("Error loading video file", e, icon=tkMessageBox.ERROR)
                     del self.video_player
                     self.video_player = None
-        self._update_ui()
+            self._update_ui()
 
     def on_save_events(self):
         if self.video_player and self.graph:
@@ -328,7 +378,7 @@ class Graph():
     def _load_data(self, csv_file):
         # TODO: Add optional arguments for number of header lines and which columns to use.
         with open(csv_file, 'r') as fin:
-            # TODO: try different loadtxt args for different headers - eg if header == blah...
+            # TODO: try different loadtxt args for different headers - eg if header == blah, use these args...
             self._data = loadtxt(fin, delimiter=",", skiprows=1, usecols=[8, 9, 10])
             self.data_length = len(self._data)
 
@@ -393,6 +443,9 @@ class Graph():
 if __name__ == '__main__':
     """ Launches and manages all of the application's components """
     root = Tk.Tk()
-    gui = GUI(root)
-    root.geometry("310x220+50+50")  # TODO: Make all the components launch with a nice layout configuration
+    synchronisation_window = GUI(root)
+    root.title("Video-Data Synchronisation Tool")
+    root.geometry("308x500+50+50")
+
+    # TODO: Make all the components launch with a nice layout configuration
     root.mainloop()
