@@ -1,8 +1,8 @@
 __author__ = 'robertevans'
 
 import cv2
-import matplotlib.pyplot as plt
 import Tkinter as Tk
+import matplotlib.pyplot as plt
 import ttk
 import tkFileDialog
 import tkMessageBox
@@ -95,19 +95,19 @@ class GUI(Tk.Frame):
 
         scrollbar = Tk.Scrollbar(parent)
         scrollbar.grid(row=130, column=3, sticky='wns')
-        self.events_textbox = \
-            Tk.Text(parent, width=30, height=10, relief=Tk.RIDGE, borderwidth=2, yscrollcommand=scrollbar.set)
-        self.events_textbox.grid(row=130, column=1, columnspan=2, sticky='we')
-        self.events_textbox.tag_configure("center", justify='center')
-        self.events_textbox.tag_add("center", 1.0, "end")
-        scrollbar.config(command=self.events_textbox.yview)
+        self.events_listbox = \
+            Tk.Listbox(parent, width=30, height=10, relief=Tk.RIDGE, borderwidth=2, yscrollcommand=scrollbar.set)
+        self.events_listbox.grid(row=130, column=1, columnspan=2, sticky='we')
+        scrollbar.config(command=self.events_listbox.yview)
 
-        def remove_text_focus(event):
-            if self.events_textbox is not self.winfo_containing(event.x_root, event.y_root):
+        self.events_listbox.bind('<<ListboxSelect>>',self._on_listbox_selection)
+
+        def remove_listbox_focus(event):
+            if self.events_listbox is not self.winfo_containing(event.x_root, event.y_root):
                 # TODO: Validate edits and update dictionary, else ask user to fix or discard
+                self.events_listbox.selection_clear(0, Tk.END)
                 parent.focus()
-                self.events_textbox.tag_add("center", 1.0, "end")
-        parent.bind("<Button>", remove_text_focus)
+        parent.bind("<Button>", remove_listbox_focus)
 
         Tk.Label(parent, text="Data index : Event type").grid(row=140, column=0, columnspan=4, sticky='we')
 
@@ -116,24 +116,32 @@ class GUI(Tk.Frame):
 
         self._update_ui()
 
+    @staticmethod
+    def _on_listbox_selection(event):
+        try:
+            widget = event.widget
+            selection = widget.curselection()
+            value = widget.get(selection[0])
+            event_index, event_type = map(int, value.split(':'))
+            print "selection:", selection, event_index, event_type
+        except IndexError:
+            pass
+
     def on_key_press_event(self, event):
         try:
             char = event.char
         except AttributeError:
             char = event.key
-        if char.isdigit() and self.graph and self.graph.current_x is not None \
-                and self.parent.focus_get() is not self.events_textbox:
+        if char.isdigit() and self.graph and self.graph.current_x is not None:
             self._annotated_events[int(round(self.graph.current_x))] = char
             self._display_annotated_events()
 
     def _display_annotated_events(self):
-        self.events_textbox.delete(1.0, Tk.END)
+        self.events_listbox.delete(0, Tk.END)
         if self._annotated_events:
-            output_string = ''
-            for key, value in sorted(self._annotated_events.items()):
-                output_string += "{0} : {1}\n".format(key, value)
-            self.events_textbox.insert(1.0, output_string)
-            self.events_textbox.tag_add("center", 1.0, "end")
+            sorted_events = sorted(self._annotated_events.items())
+            listbox_items = map(lambda t: "{0} : {1}".format(t[0], t[1]), sorted_events)
+            self.events_listbox.insert(Tk.END, *listbox_items)
 
     def set_synchronisation_point(self, point):
         if point == 'LD' and self.graph and self.graph.current_x is not None:
