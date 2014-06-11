@@ -100,7 +100,7 @@ class GUI(Tk.Frame):
         self.events_listbox.grid(row=130, column=1, columnspan=2, sticky='we')
         scrollbar.config(command=self.events_listbox.yview)
 
-        self.events_listbox.bind('<<ListboxSelect>>',self._on_listbox_selection)
+        self.events_listbox.bind('<<ListboxSelect>>', self._on_listbox_selection)
 
         def remove_listbox_focus(event):
             if self.events_listbox is not self.winfo_containing(event.x_root, event.y_root):
@@ -130,8 +130,9 @@ class GUI(Tk.Frame):
     def on_key_press_event(self, event):
         def process_char(ch):
             if ch.isdigit() and self.graph and self.graph.current_x is not None:
-                self._annotated_events[int(round(self.graph.current_x))] = ch
+                self._annotated_events[int(round(self.graph.current_x))] = int(ch)
                 self._display_annotated_events()
+                self._auto_save()
         try:
             process_char(event.char)  # If the event came from Tkinter
         except AttributeError:
@@ -377,6 +378,14 @@ class GUI(Tk.Frame):
                         'event_annotations': OrderedDict(sorted(self._annotated_events.items()))}
                 json.dump(data, outfile)
 
+    def _auto_save(self):
+        with open('events_auto_save.json', 'w') as outfile:
+            data = {'synchronisation_points':
+                        {'data_start': self._data_left_sync_point, 'data_end': self._data_right_sync_point,
+                         'video_start': self._video_left_sync_point, 'video_end': self._video_right_sync_point},
+                    'event_annotations': OrderedDict(sorted(self._annotated_events.items()))}
+            json.dump(data, outfile)
+
 
 class VideoPlayer:
     """ Manages frame by frame video playback through OpenCV and provides an API to control it. """
@@ -473,7 +482,7 @@ class Graph():
         self.current_x = None
         self._mouse_pressed = None
         self._load_data(csv_file)
-        self._draw_graph()
+        self._draw_graph(str(csv_file))
 
     def on_press(self, event):
         if self._toolbar.mode == '':
