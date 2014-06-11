@@ -128,13 +128,14 @@ class GUI(Tk.Frame):
             pass
 
     def on_key_press_event(self, event):
+        def process_char(ch):
+            if ch.isdigit() and self.graph and self.graph.current_x is not None:
+                self._annotated_events[int(round(self.graph.current_x))] = ch
+                self._display_annotated_events()
         try:
-            char = event.char
+            process_char(event.char)  # If the event came from Tkinter
         except AttributeError:
-            char = event.key
-        if char.isdigit() and self.graph and self.graph.current_x is not None:
-            self._annotated_events[int(round(self.graph.current_x))] = char
-            self._display_annotated_events()
+            pass  # process_char(event.key)  # If the event came from Pyplot.  (Crashes on insertion into listbox).
 
     def _display_annotated_events(self):
         self.events_listbox.delete(0, Tk.END)
