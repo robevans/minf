@@ -104,7 +104,6 @@ class GUI(Tk.Frame):
 
         def remove_listbox_focus(event):
             if self.events_listbox is not self.winfo_containing(event.x_root, event.y_root):
-                # TODO: Validate edits and update dictionary, else ask user to fix or discard
                 self.events_listbox.selection_clear(0, Tk.END)
                 parent.focus()
         parent.bind("<Button>", remove_listbox_focus)
