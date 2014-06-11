@@ -111,32 +111,41 @@ class GUI(Tk.Frame):
 
         Tk.Label(parent, text="Data index : Event type").grid(row=140, column=0, columnspan=4, sticky='we')
 
-        # TODO: add keypress event bindings for graph and video player windows as well
+        # TODO: add keypress event bindings for graph and video player windows as well (here be dragons)
         parent.bind("<Key>", self.on_key_press_event)
 
         self._update_ui()
 
-    @staticmethod
-    def _on_listbox_selection(event):
+    def _on_listbox_selection(self, event):
         try:
             widget = event.widget
             selection = widget.curselection()
             value = widget.get(selection[0])
             event_index, event_type = map(int, value.split(':'))
-            print "selection:", selection, event_index, event_type
+            if self.graph:
+                self.graph.set_line(event_index)
         except IndexError:
             pass
 
     def on_key_press_event(self, event):
-        def process_char(ch):
-            if ch.isdigit() and self.graph and self.graph.current_x is not None:
-                self._annotated_events[int(round(self.graph.current_x))] = int(ch)
+        def process_char(key):
+            if key.isdigit() and self.graph and self.graph.current_x is not None:
+                self._annotated_events[int(round(self.graph.current_x))] = int(key)
+                self._display_annotated_events()
+                self._auto_save()
+            elif ord(key) == 127:  # Backspace key deletes any selected listbox item
+                selected_value = self.events_listbox.get(self.events_listbox.curselection()[0])
+                event_index, event_type = map(int, selected_value.split(':'))
+                del self._annotated_events[event_index]
                 self._display_annotated_events()
                 self._auto_save()
         try:
             process_char(event.char)  # If the event came from Tkinter
         except AttributeError:
             pass  # process_char(event.key)  # If the event came from Pyplot.  (Crashes on insertion into listbox).
+            # http://stackoverflow.com/questions/24035881/fatal-python-error-pyeval-restorethread-null-tstate-when-inserting-into-tkin
+        except TypeError, e:
+            print "Type Error processing key press:", e
 
     def _display_annotated_events(self):
         self.events_listbox.delete(0, Tk.END)
@@ -216,7 +225,7 @@ class GUI(Tk.Frame):
                                               .format(self.video_player.get_current_frame(), int(self.graph.current_x)))
         elif self.video_player:
             self._label_current_frames.config(text="Video frame: {0}".format(self.video_player.get_current_frame()))
-        elif self.graph and self.graph.current_x:
+        elif self.graph and self.graph.current_x is not None:
             self._label_current_frames.config(text="Data frame: {0}".format(int(self.graph.current_x)))
         else:
             self._label_current_frames.config(text="Load a video and data from the file menu.")
