@@ -25,7 +25,7 @@ class GUI(Tk.Frame):
         self._video_right_sync_point = None
         self._data_file_name = None
         self._video_file_name = None
-        self._events_file_name = None
+        self._events_file = None
         self._annotated_events = {}
 
         # Menu controls
@@ -155,9 +155,9 @@ class GUI(Tk.Frame):
 
     def set_synchronisation_point(self, point):
         if point == 'LD' and self.graph and self.graph.current_x is not None:
-            self._data_left_sync_point = round(self.graph.current_x)
+            self._data_left_sync_point = int(round(self.graph.current_x))
         elif point == 'RD' and self.graph and self.graph.current_x is not None:
-            self._data_right_sync_point = round(self.graph.current_x)
+            self._data_right_sync_point = int(round(self.graph.current_x))
         elif point == 'LV' and self.video_player:
             self._video_left_sync_point = self.video_player.get_current_frame()
         elif point == 'RV' and self.video_player:
@@ -167,6 +167,7 @@ class GUI(Tk.Frame):
                 tkMessageBox.showwarning("Could not set synchronisation point", "Please load a data file.")
             if point == 'LV' or point == 'RV':
                 tkMessageBox.showwarning("Could not set synchronisation point", "Please load a video file.")
+        self._auto_save()
         self._update_ui()
 
     def _update_ui(self):
@@ -350,7 +351,7 @@ class GUI(Tk.Frame):
                             self._video_left_sync_point = points['video_start']
                         if not self.video_player or 0 <= points['video_end'] < self.video_player.n_frames:
                             self._video_right_sync_point = points['video_end']
-                        self._events_file_name = file_name
+                        self._events_file = "{0}{1}".format(file_name, file_extension)
                         if self.graph and self.video_player:
                             self.graph.set_line(self._get_data_frame_from_video_frame(), call_callback=False)
                         self._update_ui()
@@ -375,9 +376,9 @@ class GUI(Tk.Frame):
             self._update_ui()
 
     def on_save_events(self):
-        if self._events_file_name is None:
-            self._events_file_name = "{0}.json".format(self._data_file_name)
-        filename = tkFileDialog.asksaveasfilename(parent=self, initialfile=self._events_file_name)
+        if self._events_file is None:
+            self._events_file = "{0}.json".format(self._data_file_name)
+        filename = tkFileDialog.asksaveasfilename(parent=self, initialfile=self._events_file)
         if filename:
             with open(filename, 'w') as outfile:
                 data = {'synchronisation_points':
