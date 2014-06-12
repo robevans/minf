@@ -173,7 +173,6 @@ class GUI(Tk.Frame):
         self._update_ui(caller='set_sync_point')
 
     def _update_ui(self, caller=None):
-        print "Updating UI, caller",caller
         self._check_if_graph_has_been_closed()
         self._update_synchronisation_event_labels()
         self._update_frame_label()
@@ -236,20 +235,13 @@ class GUI(Tk.Frame):
 
     def on_next_video_frame(self):
         if self.video_player:
-            self.video_player.show_next_frame()
-            if self.graph:
-                self.graph.set_line(self._get_data_frame_from_video_frame(), call_callback=False)
-            self._update_ui(caller='next_video_frame_btn')
+            self._video_slider.set((self._video_slider.get() + 1) % self.video_player.n_frames)
 
     def on_prev_video_frame(self):
         if self.video_player:
-            self.video_player.show_prev_frame()
-            if self.graph:
-                self.graph.set_line(self._get_data_frame_from_video_frame(), call_callback=False)
-            self._update_ui(caller='prev_video_frame_btn')
+            self._video_slider.set((self._video_slider.get() - 1) % self.video_player.n_frames)
 
     def _on_video_slider_change(self, slider_value):
-        print "Video slider changed to",slider_value
         if self.video_player:
             self.video_player.set_current_frame(int(slider_value))
             if self.graph:
@@ -262,7 +254,7 @@ class GUI(Tk.Frame):
                 data_value = 0
             else:
                 data_value = (self.graph.current_x + 1) % self.graph.data_length
-            self.graph.set_line(data_value)
+            self._data_slider.set(data_value)
 
     def on_prev_data_frame(self):
         if self.graph and self.graph.data_length:
@@ -270,16 +262,14 @@ class GUI(Tk.Frame):
                 data_value = self.graph.data_length - 1
             else:
                 data_value = (self.graph.current_x - 1) % self.graph.data_length
-            self.graph.set_line(data_value)
+            self._data_slider.set(data_value)
 
     def _on_data_slider_change(self, slider_value):
-        print "data slider changed to",slider_value
         if self.graph:
             self.graph.set_line(int(slider_value))
             self._update_ui(caller="data_slider")
 
     def _on_graph_line_update(self):
-        print "Graph line update callback"
         if self.video_player:
             self.video_player.set_current_frame(self._get_video_frame_from_data_frame())
         self._update_ui(caller="graph_line_update")
@@ -439,7 +429,6 @@ class VideoPlayer:
     def set_current_frame(self, frame_number):
         if frame_number is not None:
             if self._current_frame != int(round(frame_number)) and 0 <= frame_number < self.n_frames:
-                print "setting video frame from",self._current_frame,"to",frame_number
                 self._current_frame = int(round(frame_number))
                 self._show_current_frame()
 
@@ -520,7 +509,6 @@ class Graph():
 
     def set_line(self, x, call_callback=True):
         if self.current_x is None or abs(self.current_x - x) > 0.0001:
-            print "Setting graph line from", self.current_x, "to", x
             if self._line:
                 del(self._ax.lines[-1])
                 self._line = None
