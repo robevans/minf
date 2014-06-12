@@ -10,6 +10,7 @@ import os
 import json
 from collections import OrderedDict
 from numpy import loadtxt
+import threading
 
 
 class GUI(Tk.Frame):
@@ -27,6 +28,7 @@ class GUI(Tk.Frame):
         self._video_file_name = None
         self._events_file = None
         self._annotated_events = {}
+        self._lock = threading.Lock()
 
         # Menu controls
         menu_bar = Tk.Menu(self.parent)
@@ -171,40 +173,50 @@ class GUI(Tk.Frame):
         self._update_ui()
 
     def _update_ui(self):
-        self._check_if_graph_has_been_closed()
-        self._update_synchronisation_event_labels()
-        self._update_frame_label()
-        self._display_annotated_events()
+        with self._lock:
+            self._check_if_graph_has_been_closed()
+            self._update_synchronisation_event_labels()
+            self._update_frame_label()
+            self._display_annotated_events()
 
-        if self.graph:
-            self._left_data_sync_button.config(state=Tk.NORMAL)
-            self._right_data_sync_button.config(state=Tk.NORMAL)
-            self._next_data_frame_button.config(state=Tk.NORMAL)
-            self._prev_data_frame_button.config(state=Tk.NORMAL)
-            self._data_slider.config(state=Tk.NORMAL, from_=0, to=self.graph.data_length)
-            if self.graph.current_x:
-                self._data_slider.set(self.graph.current_x)
-        else:
-            self._left_data_sync_button.config(state=Tk.DISABLED)
-            self._right_data_sync_button.config(state=Tk.DISABLED)
-            self._next_data_frame_button.config(state=Tk.DISABLED)
-            self._next_data_frame_button.config(state=Tk.DISABLED)
-            self._prev_data_frame_button.config(state=Tk.DISABLED)
-            self._data_slider.config(state=Tk.DISABLED)
+            print self.video_player
+            print self.graph
 
-        if self.video_player:
-            self._left_video_sync_button.config(state=Tk.NORMAL)
-            self._right_video_sync_button.config(state=Tk.NORMAL)
-            self._next_video_frame_button.config(state=Tk.NORMAL)
-            self._prev_video_frame_button.config(state=Tk.NORMAL)
-            self._video_slider.config(state=Tk.NORMAL, from_=0, to=self.video_player.n_frames)
-            self._video_slider.set(self.video_player.get_current_frame())
-        else:
-            self._left_video_sync_button.config(state=Tk.DISABLED)
-            self._right_video_sync_button.config(state=Tk.DISABLED)
-            self._next_video_frame_button.config(state=Tk.DISABLED)
-            self._prev_video_frame_button.config(state=Tk.DISABLED)
-            self._video_slider.config(state=Tk.DISABLED)
+
+            if self.graph:
+                self._left_data_sync_button.config(state=Tk.NORMAL)
+                self._right_data_sync_button.config(state=Tk.NORMAL)
+                self._next_data_frame_button.config(state=Tk.NORMAL)
+                self._prev_data_frame_button.config(state=Tk.NORMAL)
+                self._data_slider.config(state=Tk.NORMAL, from_=0, to=self.graph.data_length)
+                if self.graph.current_x:
+                    self._data_slider.set(self.graph.current_x)
+                print "graph"
+            else:
+                self._left_data_sync_button.config(state=Tk.DISABLED)
+                self._right_data_sync_button.config(state=Tk.DISABLED)
+                self._next_data_frame_button.config(state=Tk.DISABLED)
+                self._next_data_frame_button.config(state=Tk.DISABLED)
+                self._prev_data_frame_button.config(state=Tk.DISABLED)
+                self._data_slider.config(state=Tk.DISABLED)
+                print "no graph"
+
+            if self.video_player:
+                self._left_video_sync_button.config(state=Tk.NORMAL)
+                self._right_video_sync_button.config(state=Tk.NORMAL)
+                self._next_video_frame_button.config(state=Tk.NORMAL)
+                self._prev_video_frame_button.config(state=Tk.NORMAL)
+                self._video_slider.config(state=Tk.NORMAL, from_=0, to=self.video_player.n_frames)
+                self._video_slider.set(self.video_player.get_current_frame())
+                print "Video"
+            else:
+                self._left_video_sync_button.config(state=Tk.DISABLED)
+                self._right_video_sync_button.config(state=Tk.DISABLED)
+                self._next_video_frame_button.config(state=Tk.DISABLED)
+                self._prev_video_frame_button.config(state=Tk.DISABLED)
+                self._video_slider.config(state=Tk.DISABLED)
+                print "No video"
+
 
     def _update_synchronisation_event_labels(self):
         if self.graph:
@@ -245,6 +257,7 @@ class GUI(Tk.Frame):
             self._update_ui()
 
     def _on_video_slider_change(self, slider_value):
+        print "Called on video slider change"
         if self.video_player:
             self.video_player.set_current_frame(int(slider_value))
             if self.graph:
@@ -431,7 +444,7 @@ class VideoPlayer:
         self._show_current_frame()
 
     def set_current_frame(self, frame_number):
-        if 0 <= frame_number < self.n_frames:
+        if self._current_frame is not int(round(frame_number)) and 0 <= frame_number < self.n_frames:
             self._current_frame = int(round(frame_number))
             self._show_current_frame()
 
