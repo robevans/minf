@@ -115,7 +115,7 @@ class GUI(Tk.Frame):
         # TODO: add keypress event bindings for graph and video player windows as well (here be dragons)
         parent.bind("<Key>", self.on_key_press_event)
 
-        self._update_ui()
+        self._update_ui(caller='init')
 
     def _on_listbox_selection(self, event):
         try:
@@ -170,46 +170,45 @@ class GUI(Tk.Frame):
             if point == 'LV' or point == 'RV':
                 tkMessageBox.showwarning("Could not set synchronisation point", "Please load a video file.")
         self._auto_save()
-        self._update_ui()
+        self._update_ui(caller='set_sync_point')
 
     def _update_ui(self, caller=None):
-        with self._lock:
-            self._check_if_graph_has_been_closed()
-            self._update_synchronisation_event_labels()
-            self._update_frame_label()
-            self._display_annotated_events()
+        print "Updating UI, caller",caller
+        self._check_if_graph_has_been_closed()
+        self._update_synchronisation_event_labels()
+        self._update_frame_label()
+        self._display_annotated_events()
 
-            if self.graph:
-                self._left_data_sync_button.config(state=Tk.NORMAL)
-                self._right_data_sync_button.config(state=Tk.NORMAL)
-                self._next_data_frame_button.config(state=Tk.NORMAL)
-                self._prev_data_frame_button.config(state=Tk.NORMAL)
-                self._data_slider.config(state=Tk.NORMAL, from_=0, to=self.graph.data_length)
-                if self.graph.current_x:
-                    self._data_slider.set(self.graph.current_x)
-            else:
-                self._left_data_sync_button.config(state=Tk.DISABLED)
-                self._right_data_sync_button.config(state=Tk.DISABLED)
-                self._next_data_frame_button.config(state=Tk.DISABLED)
-                self._next_data_frame_button.config(state=Tk.DISABLED)
-                self._prev_data_frame_button.config(state=Tk.DISABLED)
-                self._data_slider.config(state=Tk.DISABLED)
+        if self.graph:
+            self._left_data_sync_button.config(state=Tk.NORMAL)
+            self._right_data_sync_button.config(state=Tk.NORMAL)
+            self._next_data_frame_button.config(state=Tk.NORMAL)
+            self._prev_data_frame_button.config(state=Tk.NORMAL)
+            self._data_slider.config(state=Tk.NORMAL, from_=0, to=self.graph.data_length)
+            if self.graph.current_x is not None and caller is not 'data_slider':
+                self._data_slider.set(self.graph.current_x)
+        else:
+            self._left_data_sync_button.config(state=Tk.DISABLED)
+            self._right_data_sync_button.config(state=Tk.DISABLED)
+            self._next_data_frame_button.config(state=Tk.DISABLED)
+            self._next_data_frame_button.config(state=Tk.DISABLED)
+            self._prev_data_frame_button.config(state=Tk.DISABLED)
+            self._data_slider.config(state=Tk.DISABLED)
 
-            if self.video_player:
-                self._left_video_sync_button.config(state=Tk.NORMAL)
-                self._right_video_sync_button.config(state=Tk.NORMAL)
-                self._next_video_frame_button.config(state=Tk.NORMAL)
-                self._prev_video_frame_button.config(state=Tk.NORMAL)
-                self._video_slider.config(state=Tk.NORMAL, from_=0, to=self.video_player.n_frames)
-                if caller is not "video_slider":
-                    self._video_slider.set(self.video_player.get_current_frame())
-            else:
-                self._left_video_sync_button.config(state=Tk.DISABLED)
-                self._right_video_sync_button.config(state=Tk.DISABLED)
-                self._next_video_frame_button.config(state=Tk.DISABLED)
-                self._prev_video_frame_button.config(state=Tk.DISABLED)
-                self._video_slider.config(state=Tk.DISABLED)
-
+        if self.video_player:
+            self._left_video_sync_button.config(state=Tk.NORMAL)
+            self._right_video_sync_button.config(state=Tk.NORMAL)
+            self._next_video_frame_button.config(state=Tk.NORMAL)
+            self._prev_video_frame_button.config(state=Tk.NORMAL)
+            self._video_slider.config(state=Tk.NORMAL, from_=0, to=self.video_player.n_frames)
+            if caller is not "video_slider":
+                self._video_slider.set(self.video_player.get_current_frame())
+        else:
+            self._left_video_sync_button.config(state=Tk.DISABLED)
+            self._right_video_sync_button.config(state=Tk.DISABLED)
+            self._next_video_frame_button.config(state=Tk.DISABLED)
+            self._prev_video_frame_button.config(state=Tk.DISABLED)
+            self._video_slider.config(state=Tk.DISABLED)
 
     def _update_synchronisation_event_labels(self):
         if self.graph:
@@ -240,16 +239,17 @@ class GUI(Tk.Frame):
             self.video_player.show_next_frame()
             if self.graph:
                 self.graph.set_line(self._get_data_frame_from_video_frame(), call_callback=False)
-            self._update_ui()
+            self._update_ui(caller='next_video_frame_btn')
 
     def on_prev_video_frame(self):
         if self.video_player:
             self.video_player.show_prev_frame()
             if self.graph:
                 self.graph.set_line(self._get_data_frame_from_video_frame(), call_callback=False)
-            self._update_ui()
+            self._update_ui(caller='prev_video_frame_btn')
 
     def _on_video_slider_change(self, slider_value):
+        print "Video slider changed to",slider_value
         if self.video_player:
             self.video_player.set_current_frame(int(slider_value))
             if self.graph:
@@ -273,14 +273,16 @@ class GUI(Tk.Frame):
             self.graph.set_line(data_value)
 
     def _on_data_slider_change(self, slider_value):
+        print "data slider changed to",slider_value
         if self.graph:
             self.graph.set_line(int(slider_value))
-            self._update_ui()
+            self._update_ui(caller="data_slider")
 
     def _on_graph_line_update(self):
+        print "Graph line update callback"
         if self.video_player:
             self.video_player.set_current_frame(self._get_video_frame_from_data_frame())
-        self._update_ui()
+        self._update_ui(caller="graph_line_update")
 
     def _get_data_frame_from_video_frame(self):
         if self.video_player and self.graph:
@@ -359,7 +361,6 @@ class GUI(Tk.Frame):
                         self._events_file = "{0}{1}".format(file_name, file_extension)
                         if self.graph and self.video_player:
                             self.graph.set_line(self._get_data_frame_from_video_frame(), call_callback=False)
-                        self._update_ui()
                 except Exception, e:
                     tkMessageBox.showerror("Error loading events", e, icon=tkMessageBox.ERROR)
             else:
@@ -378,7 +379,7 @@ class GUI(Tk.Frame):
                     tkMessageBox.showerror("Error loading video file", e, icon=tkMessageBox.ERROR)
                     del self.video_player
                     self.video_player = None
-            self._update_ui()
+            self._update_ui(caller='load')
 
     def on_save_events(self):
         if self._events_file is None:
@@ -436,9 +437,11 @@ class VideoPlayer:
         self._show_current_frame()
 
     def set_current_frame(self, frame_number):
-        if self._current_frame != int(round(frame_number)) and 0 <= frame_number < self.n_frames:
-            self._current_frame = int(round(frame_number))
-            self._show_current_frame()
+        if frame_number is not None:
+            if self._current_frame != int(round(frame_number)) and 0 <= frame_number < self.n_frames:
+                print "setting video frame from",self._current_frame,"to",frame_number
+                self._current_frame = int(round(frame_number))
+                self._show_current_frame()
 
     def get_current_frame(self):
         return self._current_frame
@@ -516,16 +519,18 @@ class Graph():
         self._mouse_pressed = None
 
     def set_line(self, x, call_callback=True):
-        if self._line:
-            del(self._ax.lines[-1])
-            self._line = None
-            self.current_x = None
-        if 0 <= x <= len(self._data):
-            self.current_x = x
-            self._line = self._line = self._ax.axvline(x=x, color='red', linewidth=3)
-            self._fig.canvas.draw()
-            if call_callback:
-                self._line_update_callback()
+        if self.current_x is None or abs(self.current_x - x) > 0.0001:
+            print "Setting graph line from", self.current_x, "to", x
+            if self._line:
+                del(self._ax.lines[-1])
+                self._line = None
+                self.current_x = None
+            if 0 <= x <= len(self._data):
+                self.current_x = x
+                self._line = self._line = self._ax.axvline(x=x, color='red', linewidth=3)
+                self._fig.canvas.draw()
+                if call_callback:
+                    self._line_update_callback()
 
     def close_figure(self):
         plt.close(self._fig)
