@@ -1,0 +1,1 @@
+These captures are from Arvind walking up and down the floor of G.16, first normally, and then with a simulated limp.  He was wearing an Orient on the left chest wall (same way the Respeck is worn), with the green LED on the Orient facing outwards and at the top.
