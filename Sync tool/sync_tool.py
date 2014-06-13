@@ -135,11 +135,14 @@ class GUI(Tk.Frame):
                 self._display_annotated_events()
                 self._auto_save()
             elif ord(key) == 127:  # Backspace key deletes any selected listbox item
-                selected_value = self.events_listbox.get(self.events_listbox.curselection()[0])
-                event_index, event_type = map(int, selected_value.split(':'))
-                del self._annotated_events[event_index]
-                self._display_annotated_events()
-                self._auto_save()
+                try:
+                    selected_value = self.events_listbox.get(self.events_listbox.curselection()[0])
+                    event_index, event_type = map(int, selected_value.split(':'))
+                    del self._annotated_events[event_index]
+                    self._display_annotated_events()
+                    self._auto_save()
+                except IndexError, ie:
+                    print "Index Error on listbox", ie
         try:
             process_char(event.char)  # If the event came from Tkinter
         except AttributeError:
@@ -151,7 +154,7 @@ class GUI(Tk.Frame):
     def _display_annotated_events(self):
         self.events_listbox.delete(0, Tk.END)
         if self._annotated_events:
-            sorted_events = sorted(self._annotated_events.items())
+            sorted_events = sorted(self._annotated_events.items(), reverse=True)
             listbox_items = map(lambda t: "{0} : {1}".format(t[0], t[1]), sorted_events)
             self.events_listbox.insert(Tk.END, *listbox_items)
 
@@ -399,11 +402,14 @@ class VideoPlayer:
         self.n_frames = None
         self._video_capture = None
         self._current_frame = None
-        self._window_name = str(video_file)
+        self._window_name = None
 
         self.load_video(video_file)
 
     def load_video(self, video_file):
+        if self._window_name is not None:
+            cv2.cv.DestroyWindow(self._window_name)
+        self._window_name = str(video_file)
         # TODO: Add optional size and position arguments
         # Load video from file
         self._video_capture = cv2.VideoCapture(video_file)
