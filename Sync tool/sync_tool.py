@@ -1,9 +1,11 @@
 __author__ = 'robertevans'
 
 """
-TODO
+TODO:
 Graphically display annotated events - eg in a subplot underneath the graph.  See the matlab gait segmenter code.
+Display the number of the segment at the current data position.
 Keep the same scrolling point in the annotated events when you update the UI.  Not doing this is really annoying for usability.
+Some mechanism for trimming the data at either end would also be useful.
 (some other todos are sprinkled through the code.)
 """
 
@@ -102,12 +104,12 @@ class GUI(Tk.Frame):
 
         Tk.Label(parent, text="Press a key (0-9) to mark an event.").grid(row=120, column=0, columnspan=4)
 
-        scrollbar = Tk.Scrollbar(parent)
-        scrollbar.grid(row=130, column=3, sticky='wns')
+        self.scrollbar = Tk.Scrollbar(parent)
+        self.scrollbar.grid(row=130, column=3, sticky='wns')
         self.events_listbox = \
-            Tk.Listbox(parent, width=30, height=10, relief=Tk.RIDGE, borderwidth=2, yscrollcommand=scrollbar.set)
+            Tk.Listbox(parent, width=30, height=10, relief=Tk.RIDGE, borderwidth=2, yscrollcommand=self.scrollbar.set)
         self.events_listbox.grid(row=130, column=1, columnspan=2, sticky='we')
-        scrollbar.config(command=self.events_listbox.yview)
+        self.scrollbar.config(command=self.events_listbox.yview)
 
         self.events_listbox.bind('<<ListboxSelect>>', self._on_listbox_selection)
 
@@ -159,11 +161,13 @@ class GUI(Tk.Frame):
             print "Type Error processing key press:", e
 
     def _display_annotated_events(self):
+        #saved_scroll_position = self.scrollbar.get() # TODO: make this work
         self.events_listbox.delete(0, Tk.END)
         if self._annotated_events:
             sorted_events = sorted(self._annotated_events.items(), reverse=True)
             listbox_items = map(lambda t: "{0} : {1}".format(t[0], t[1]), sorted_events)
             self.events_listbox.insert(Tk.END, *listbox_items)
+            #self.scrollbar.set(*saved_scroll_position)
 
     def set_synchronisation_point(self, point):
         if point == 'LD' and self.graph and self.graph.current_x is not None:
@@ -475,9 +479,25 @@ class Graph():
 
     def _load_data(self, csv_file):
         # TODO: Add optional arguments for number of header lines and which columns to use.
+        file_type = None
+
+        with open(csv_file, 'r') as f:
+            header = f.readline()
+            if "gyro" in header:
+                file_type = "orient"
+            elif "breath" in header:
+                file_type = "respeck"
+
         with open(csv_file, 'r') as fin:
-            # TODO: try different loadtxt args for different headers - eg if header == blah, use these args...
-            self._data = loadtxt(fin, delimiter=",", skiprows=1, usecols=[8, 9, 10])
+            if file_type == "orient":
+                self._data = loadtxt(fin, delimiter=",", skiprows=1, usecols=[8, 9, 10])
+            elif file_type == "respeck":
+                data = loadtxt(fin, delimiter=",", skiprows=1, usecols=[4, 5, 6, 7])
+                live_data = data[data[:, 0] == 0][:, 1:]
+                self._data = live_data
+            else:
+                self._data = loadtxt(fin, delimiter=",", skiprows=1)
+
             self.data_length = len(self._data)
 
     def _draw_graph(self, title_):
