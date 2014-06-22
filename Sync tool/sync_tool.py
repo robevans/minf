@@ -1,5 +1,12 @@
 __author__ = 'robertevans'
 
+"""
+TODO
+Graphically display annotated events - eg in a subplot underneath the graph.  See the matlab gait segmenter code.
+Keep the same scrolling point in the annotated events when you update the UI.  Not doing this is really annoying for usability.
+(some other todos are sprinkled through the code.)
+"""
+
 import cv2
 import Tkinter as Tk
 import matplotlib.pyplot as plt
@@ -531,7 +538,6 @@ class Graph():
 
     def figure_is_closed(self):
         return self._fig.canvas.manager not in plt._pylab_helpers.Gcf.figs.values()
-
 
 if __name__ == '__main__':
     """ Launches and manages all of the application's components """
