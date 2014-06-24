@@ -6,6 +6,9 @@ Graphically display annotated events - eg in a subplot underneath the graph.  Se
 Display the number of the segment at the current data position.
 Keep the same scrolling point in the annotated events when you update the UI.  Not doing this is really annoying for usability.
 Some mechanism for trimming the data at either end would also be useful.
+Make video resizable
+Play video sound
+Fix listbox selection (currently takes several clicks to select something)
 (some other todos are sprinkled through the code.)
 """
 
@@ -239,11 +242,11 @@ class GUI(Tk.Frame):
     def _update_frame_label(self):
         if self.video_player and self.graph and self.graph.current_x is not None:
             self._label_current_frames.config(text="Video frame: {0}\tData frame: {1}"
-                                              .format(self.video_player.get_current_frame(), int(self.graph.current_x)))
+                                              .format(self.video_player.get_current_frame(), int(round(self.graph.current_x))))
         elif self.video_player:
             self._label_current_frames.config(text="Video frame: {0}".format(self.video_player.get_current_frame()))
         elif self.graph and self.graph.current_x is not None:
-            self._label_current_frames.config(text="Data frame: {0}".format(int(self.graph.current_x)))
+            self._label_current_frames.config(text="Data frame: {0}".format(int(round(self.graph.current_x))))
         else:
             self._label_current_frames.config(text="Load a video and data from the file menu.")
 
