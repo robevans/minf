@@ -399,6 +399,7 @@ class GUI(Tk.Frame):
                              'video_start': self._video_left_sync_point, 'video_end': self._video_right_sync_point},
                         'event_annotations': OrderedDict(sorted(self._annotated_events.items()))}
                 json.dump(data, outfile)
+                self._events_file = os.path.basename(filename)
 
     def _auto_save(self):
         with open('events_auto_save.json', 'w') as outfile:
