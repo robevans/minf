@@ -1,3 +1,13 @@
+'''
+Example usage (in terminal):
+	import laparoscopy_performance as lp
+	keyhole = lp.KeyholeSimPerformance(lp.KeyholeSimData())
+	keyhole.performancesForThreadingTask()
+	keyhole.correlateWithVisionSystem()
+	keyhole.classifiers()
+'''
+
+
 import pandas as pd
 import csv
 import datetime
@@ -151,16 +161,23 @@ class KeyholeSimPerformance:
 
 		# SCATTER PLOTS
 		def save_scatter(data,colours,title,ylabel,savePath,yLimTuple=None):
-			plt.figure()
+			fig = plt.figure()
+			ax = fig.add_subplot(111)
 			plt.title(title)
 			plt.xlabel("Trials")
 			plt.ylabel(ylabel)
-			zippedAndSorted = sorted(zip(data,colours)) 
-			unzipped = zip(*zippedAndSorted)
-			plt.scatter( range(len(data)), unzipped[0], c=unzipped[1], s=60)
-			nov = plt.scatter([], [], color='r')
-			inter = plt.scatter([], [], color='g')
-			exp = plt.scatter([], [], color='b')
+
+			# Sort by value
+			data, colours = zip(*sorted(zip(data, colours)))
+
+			nov_data = [(i,d) for (i,d,c) in zip(range(len(data)), data, colours) if c=='r']
+			inter_data = [(i,d) for (i,d,c) in zip(range(len(data)), data, colours) if c=='g']
+			exp_data = [(i,d) for (i,d,c) in zip(range(len(data)), data, colours) if c=='b']
+
+			nov = ax.scatter(zip(*nov_data)[0], zip(*nov_data)[1], color='r', marker='o', s=60)
+			inter = ax.scatter(zip(*inter_data)[0], zip(*inter_data)[1], color='g', marker='^', s=60)
+			exp = ax.scatter(zip(*exp_data)[0], zip(*exp_data)[1], color='b', marker='*', s=60)
+
 			plt.legend((nov,inter,exp),['Novice','Intermediate','Expert'], loc=2)
 			plt.xticks( [] )
 			plt.gca().set_xlim(-1,len(data))
@@ -215,7 +232,7 @@ class KeyholeSimPerformance:
 
 	def correlateWithVisionSystem(self):
 		orient_vision_alignment = [self.db.intermediate[9],self.db.intermediate[5],self.db.intermediate[7],self.db.novice[6],self.db.novice[5],self.db.expert[5],self.db.expert[4],self.db.expert[7],self.db.expert[8],self.db.expert[2],self.db.expert[1],self.db.novice[0],self.db.intermediate[2],self.db.intermediate[4],self.db.novice[1],self.db.intermediate[8],self.db.novice[3],self.db.intermediate[3],self.db.expert[6],self.db.intermediate[0],self.db.intermediate[1],self.db.intermediate[6],self.db.expert[3],self.db.novice[4],self.db.expert[0],self.db.novice[2]]
-		orient_performances = map( self.performance, orient_vision_alignment)
+		orient_performances = map(self.performance, orient_vision_alignment)
 
 		colour_code = ['g','g','g','r','r','b','b','b','b','b','b','r','g','g','r','g','r','g','b','g','g','g','b','r','b','r']
 
@@ -244,82 +261,73 @@ class KeyholeSimPerformance:
 		corr_smoothness = spearmanr(orient_smoothness, vision_smoothness)
 		corr_handedness = spearmanr(orient_handedness, vision_handedness)
 
-		plt.figure()
+		def plot_to_axis_helper(ax, orient_data, vision_data, colour_code, legend_loc):
+			nov_data = [(o,v) for (o,v,c) in zip(orient_data, vision_data, colour_code) if c=='r']
+			inter_data = [(o,v) for (o,v,c) in zip(orient_data, vision_data, colour_code) if c=='g']
+			exp_data = [(o,v) for (o,v,c) in zip(orient_data, vision_data, colour_code) if c=='b']
+			nov = ax.scatter(zip(*nov_data)[0], zip(*nov_data)[1], color='r', marker='o', s=60)
+			inter = ax.scatter(zip(*inter_data)[0], zip(*inter_data)[1], color='g', marker='^', s=60)
+			exp = ax.scatter(zip(*exp_data)[0], zip(*exp_data)[1], color='b', marker='*', s=60)
+			plt.legend((nov,inter,exp),['Novice','Intermediate','Expert'], loc=legend_loc)
+
+		fig = plt.figure()
+		ax = fig.add_subplot(111)
 		plt.xlabel('Orient Duration (seconds)')
 		plt.ylabel('Vision Duration (seconds)')
 		plt.title("Task Duration\nSpearman Correlation: {0:.3g} p-value: {1:.3g}".format(corr_durations[0], corr_durations[1]))
-		plt.scatter(orient_durations, vision_durations, c=colour_code, s=60)
-		nov = plt.scatter([], [], color='r')
-		inter = plt.scatter([], [], color='g')
-		exp = plt.scatter([], [], color='b')
-		plt.legend((nov,inter,exp),['Novice','Intermediate','Expert'], loc=2)
+		plot_to_axis_helper(ax, orient_durations, vision_durations, colour_code, 2)
 		plt.tight_layout()
 		with open("/Users/robertevans/repos/minf/keyhole_graphs/durations_corr.png", 'w') as figOut:
 			plt.savefig(figOut)
 
-		plt.figure()
+		fig = plt.figure()
+		ax = fig.add_subplot(111)
 		plt.xlabel('Angular Distance (radians)')
 		plt.ylabel('Visual Distance (metres)')
 		plt.title("Total Distance\nSpearman Correlation: {0:.3g} p-value: {1:.3g}".format(corr_distances[0], corr_distances[1]))
-		plt.scatter(orient_distances, vision_distances, c=colour_code, s=60)
-		nov = plt.scatter([], [], color='r')
-		inter = plt.scatter([], [], color='g')
-		exp = plt.scatter([], [], color='b')
-		plt.legend((nov,inter,exp),['Novice','Intermediate','Expert'], loc=2)
+		plot_to_axis_helper(ax, orient_distances, vision_distances, colour_code, 2)
 		plt.tight_layout()
 		with open("/Users/robertevans/repos/minf/keyhole_graphs/distances_corr.png", 'w') as figOut:
 			plt.savefig(figOut)
 
-		plt.figure()
+		fig = plt.figure()
+		ax = fig.add_subplot(111)
 		plt.xlabel('Angular Speed (radians per second)')
 		plt.ylabel('Visual Speed (metres per second)')
 		plt.title("Average Speed\nSpearman Correlation: {0:.3g} p-value: {1:.3g}".format(corr_speeds[0], corr_speeds[1]))
-		plt.scatter(orient_speeds, vision_speeds, c=colour_code, s=60)
-		nov = plt.scatter([], [], color='r')
-		inter = plt.scatter([], [], color='g')
-		exp = plt.scatter([], [], color='b')
-		plt.legend((nov,inter,exp),['Novice','Intermediate','Expert'], loc=2)
+		plot_to_axis_helper(ax, orient_speeds, vision_speeds, colour_code, 2)
 		plt.tight_layout()
 		with open("/Users/robertevans/repos/minf/keyhole_graphs/speeds_corr.png", 'w') as figOut:
 			plt.savefig(figOut)
 
-		plt.figure()
+		fig = plt.figure()
+		ax = fig.add_subplot(111)
 		plt.xlabel('Angular Acceleration (radians per second$^2$)')
 		plt.ylabel('Visual Acceleration (metres per second$^2$)')
 		plt.title("Average Acceleration\nSpearman Correlation: {0:.3g} p-value: {1:.3g}".format(corr_accels[0], corr_accels[1]))
-		plt.scatter(orient_accels, vision_accels, c=colour_code, s=60)
-		nov = plt.scatter([], [], color='r')
-		inter = plt.scatter([], [], color='g')
-		exp = plt.scatter([], [], color='b')
-		plt.legend((nov,inter,exp),['Novice','Intermediate','Expert'], loc=4)
+		plot_to_axis_helper(ax, orient_accels, vision_accels, colour_code, 4)
 		plt.gca().set_xlim(0,0.002)
 		plt.gca().set_ylim(0.8,2.6)
 		plt.tight_layout()
 		with open("/Users/robertevans/repos/minf/keyhole_graphs/accels_corr.png", 'w') as figOut:
 			plt.savefig(figOut)
 
-		plt.figure()
+		fig = plt.figure()
+		ax = fig.add_subplot(111)
 		plt.xlabel('Angular Smoothness (radians per second$^3$)')
 		plt.ylabel('Visual Smoothness (metres per second$^3$)')
 		plt.title("Motion Smoothness\nSpearman Correlation: {0:.3g} p-value: {1:.3g}".format(corr_smoothness[0], corr_smoothness[1]))
-		plt.scatter(orient_smoothness, vision_smoothness, c=colour_code, s=60)
-		nov = plt.scatter([], [], color='r')
-		inter = plt.scatter([], [], color='g')
-		exp = plt.scatter([], [], color='b')
-		plt.legend((nov,inter,exp),['Novice','Intermediate','Expert'], loc=1)
+		plot_to_axis_helper(ax, orient_smoothness, vision_smoothness, colour_code, 1)
 		plt.tight_layout()
 		with open("/Users/robertevans/repos/minf/keyhole_graphs/smoothnesses_corr.png", 'w') as figOut:
 			plt.savefig(figOut)
 
-		plt.figure()
+		fig = plt.figure()
+		ax = fig.add_subplot(111)
 		plt.xlabel('Orient Handedness bias (radians)')
 		plt.ylabel('Visual Handedness bias (metres)')
 		plt.title("Handedness\nSpearman Correlation: {0:.3g} p-value: {1:.3g}".format(corr_handedness[0], corr_handedness[1]))
-		plt.scatter(orient_handedness, vision_handedness, c=colour_code, s=60)
-		nov = plt.scatter([], [], color='r')
-		inter = plt.scatter([], [], color='g')
-		exp = plt.scatter([], [], color='b')
-		plt.legend((nov,inter,exp),['Novice','Intermediate','Expert'], loc=2)
+		plot_to_axis_helper(ax, orient_handedness, vision_handedness, colour_code, 2)
 		plt.tight_layout()
 		with open("/Users/robertevans/repos/minf/keyhole_graphs/handednesses_corr.png", 'w') as figOut:
 			plt.savefig(figOut)
@@ -445,16 +453,23 @@ class KeyholeSimPerformance:
 
 		anova_perfs = kruskalwallis([t[0] for t in classes if t[1] == 'r'],[t[0] for t in classes if t[1] == 'g'],[t[0] for t in classes if t[1] == 'b'])
 
-		plt.figure()
+		fig = plt.figure()
+		ax = fig.add_subplot(111)
 		plt.title("Linear Performance Score")
 		plt.xlabel("Trials")
 		plt.ylabel("Score")
-		zippedAndSorted = sorted(zip(all_regressions,all_colours))
-		unzipped = zip(*zippedAndSorted)
-		plt.scatter(range(len(unzipped[0])), unzipped[0], c=unzipped[1], s=60)
-		nov = plt.scatter([], [], color='r')
-		inter = plt.scatter([], [], color='g')
-		exp = plt.scatter([], [], color='b')
+
+		# Sort by value
+		all_regressions, all_colours = zip(*sorted(zip(all_regressions, all_colours)))
+
+		# Plot each experience level with different markers and colours
+		nov_data = [(i,d) for (i,d,c) in zip(range(len(all_regressions)), all_regressions, all_colours) if c=='r']
+		inter_data = [(i,d) for (i,d,c) in zip(range(len(all_regressions)), all_regressions, all_colours) if c=='g']
+		exp_data = [(i,d) for (i,d,c) in zip(range(len(all_regressions)), all_regressions, all_colours) if c=='b']
+		nov = ax.scatter(zip(*nov_data)[0], zip(*nov_data)[1], color='r', marker='o', s=60)
+		inter = ax.scatter(zip(*inter_data)[0], zip(*inter_data)[1], color='g', marker='^', s=60)
+		exp = ax.scatter(zip(*exp_data)[0], zip(*exp_data)[1], color='b', marker='*', s=60)
+
 		plt.legend((nov,inter,exp),['Novice','Intermediate','Expert'], loc=2)
 		plt.xticks( [] )
 		#plt.gca().set_xlim(-1,15)
